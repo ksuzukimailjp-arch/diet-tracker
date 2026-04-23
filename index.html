@@ -10,33 +10,21 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:#f2f6f2;font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;color:#1a2e1a;-webkit-font-smoothing:antialiased}
-button,input,select{font-family:inherit}
-input:focus{outline:none;border-color:#3a8a5a!important;box-shadow:0 0 0 3px rgba(58,138,90,0.12)}
+button,input{font-family:inherit}
+input:focus{outline:none;border-color:#3a8a5a!important}
 ::-webkit-scrollbar{display:none}
-#app{max-width:480px;margin:0 auto;padding:20px 16px 48px;min-height:100vh}
+.wrap{max-width:480px;margin:0 auto;padding:20px 16px 48px;min-height:100vh}
 .card{background:#fff;border-radius:14px;padding:14px;box-shadow:0 1px 10px rgba(40,90,60,0.08);border:1px solid #d4e8d4;margin-bottom:12px}
-.label{font-size:10px;color:#6a8a6a;font-weight:700;letter-spacing:2px;margin-bottom:10px}
+.lbl{font-size:10px;color:#6a8a6a;font-weight:700;letter-spacing:2px;margin-bottom:10px}
 .tabs{display:flex;gap:3px;margin-bottom:14px;background:#edf7ed;border-radius:10px;padding:3px}
-.tab{flex:1;padding:7px 2px;border-radius:8px;border:none;background:transparent;color:#6a8a6a;font-weight:500;font-size:10px;cursor:pointer;transition:all 0.15s}
-.tab.active{background:#fff;color:#3a8a5a;font-weight:800;box-shadow:0 1px 4px rgba(40,90,60,0.1)}
-.btn-pri{border:none;background:#3a8a5a;color:#fff;font-size:13px;font-weight:700;cursor:pointer;border-radius:9px;padding:10px 16px;transition:opacity 0.15s;width:100%}
-.btn-pri:disabled{background:#c8e6c9;cursor:default}
-.btn-adj{flex:1;padding:10px 0;border-radius:9px;border:1.5px solid #d4e8d4;background:#fff;font-size:12px;font-weight:700;cursor:pointer}
-.stat-box{flex:1;padding:9px 10px}
-.task-btn{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;border:1.5px solid #d4e8d4;background:#fff;cursor:pointer;text-align:left;transition:all 0.18s;width:100%;margin-bottom:7px}
-.task-btn.done{border-color:#3a8a5a;background:rgba(58,138,90,0.05)}
-.task-btn.breakfast-pending{border-color:#e0a040;background:#fffbf0}
-.check-circle{width:20px;height:20px;border-radius:50%;background:#d4e8d4;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0;transition:background 0.18s}
-.check-circle.done{background:#3a8a5a}
-.meal-btn{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;border:2px solid #d4e8d4;background:#fff;cursor:pointer;text-align:left;transition:all 0.15s;width:100%;margin-bottom:7px}
-.ex-type-btn{padding:8px 4px;border-radius:10px;border:1.5px solid #d4e8d4;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all 0.15s}
-.ex-type-btn.sel{border-color:#3a8a5a;background:#edf7ed}
-.ex-dur-btn{padding:8px 14px;border-radius:9px;border:1.5px solid #d4e8d4;background:#fff;font-size:13px;font-weight:500;color:#6a8a6a;cursor:pointer;transition:all 0.15s;margin-right:6px;margin-bottom:6px}
-.ex-dur-btn.sel{border-color:#3a8a5a;background:#edf7ed;color:#3a8a5a;font-weight:700}
+.tab{flex:1;padding:7px 2px;border-radius:8px;border:none;background:transparent;color:#6a8a6a;font-weight:500;font-size:10px;cursor:pointer}
+.tab.on{background:#fff;color:#3a8a5a;font-weight:800;box-shadow:0 1px 4px rgba(40,90,60,0.1)}
+.pbtn{border:none;background:#3a8a5a;color:#fff;font-size:13px;font-weight:700;cursor:pointer;border-radius:9px;padding:10px 16px;width:100%;margin-top:8px}
+.pbtn:disabled{background:#c8e6c9;cursor:default}
 .setup{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-.setup-card{background:#fff;border-radius:20px;padding:28px;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(40,90,60,0.12)}
+.scard{background:#fff;border-radius:20px;padding:28px;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(40,90,60,0.12)}
 @keyframes spin{to{transform:rotate(360deg)}}
-.spinner{width:20px;height:20px;border:3px solid #c8e6c9;border-top:3px solid #3a8a5a;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;vertical-align:middle}
+.sp{width:20px;height:20px;border:3px solid #c8e6c9;border-top:3px solid #3a8a5a;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;vertical-align:middle}
 @keyframes fadeUp{0%{opacity:0;transform:translateX(-50%) translateY(10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0}}
 .toast{position:fixed;top:24px;left:50%;background:#3a8a5a;color:#fff;padding:12px 24px;border-radius:20px;font-size:13px;font-weight:800;z-index:9999;box-shadow:0 6px 24px rgba(40,130,80,0.45);animation:fadeUp 3s ease forwards;white-space:nowrap;pointer-events:none}
 </style>
@@ -44,634 +32,697 @@ input:focus{outline:none;border-color:#3a8a5a!important;box-shadow:0 0 0 3px rgb
 <body>
 <div id="root"></div>
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
-const GH_REPO = "ksuzukimailjp-arch/diet-tracker";
-const GH_FILE = "data.json";
-const GH_API  = `https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}`;
-const LS_TOKEN= "gh_token";
-const LS_SHA  = "gh_sha";
+var GH_REPO="ksuzukimailjp-arch/diet-tracker";
+var GH_FILE="data.json";
+var GH_API="https://api.github.com/repos/"+GH_REPO+"/contents/"+GH_FILE;
+var LS_TOKEN="gh_token";
+var LS_SHA="gh_sha";
 
-const getToken=()=>localStorage.getItem(LS_TOKEN)||"";
-const getSha  =()=>localStorage.getItem(LS_SHA)||"";
-const setToken=(t)=>localStorage.setItem(LS_TOKEN,t);
-const setSha  =(s)=>localStorage.setItem(LS_SHA,s);
+function getToken(){return localStorage.getItem(LS_TOKEN)||"";}
+function getSha(){return localStorage.getItem(LS_SHA)||"";}
+function setToken(t){localStorage.setItem(LS_TOKEN,t);}
+function setSha(s){localStorage.setItem(LS_SHA,s);}
 
-async function ghFetch(){
-  const res=await fetch(GH_API,{headers:{Authorization:`token ${getToken()}`,Accept:"application/vnd.github.v3+json"}});
-  if(!res.ok)throw new Error("fetch_failed");
-  const json=await res.json();
-  setSha(json.sha);
-  return JSON.parse(atob(json.content.replace(/\n/g,"")));
+function ghFetch(){
+  return fetch(GH_API,{headers:{Authorization:"token "+getToken(),Accept:"application/vnd.github.v3+json"}})
+    .then(function(r){if(!r.ok)throw new Error("fail");return r.json();})
+    .then(function(j){setSha(j.sha);return JSON.parse(atob(j.content.replace(/\n/g,"")));});
 }
-async function ghSave(store){
-  const content=btoa(unescape(encodeURIComponent(JSON.stringify(store,null,2))));
-  const res=await fetch(GH_API,{method:"PUT",headers:{Authorization:`token ${getToken()}`,Accept:"application/vnd.github.v3+json","Content-Type":"application/json"},body:JSON.stringify({message:"update data",content,sha:getSha()})});
-  if(!res.ok)throw new Error("save_failed");
-  const json=await res.json();
-  setSha(json.content.sha);
+function ghSave(store){
+  var content=btoa(unescape(encodeURIComponent(JSON.stringify(store,null,2))));
+  return fetch(GH_API,{method:"PUT",headers:{Authorization:"token "+getToken(),Accept:"application/vnd.github.v3+json","Content-Type":"application/json"},body:JSON.stringify({message:"update data",content:content,sha:getSha()})})
+    .then(function(r){if(!r.ok)throw new Error("fail");return r.json();})
+    .then(function(j){setSha(j.content.sha);});
 }
 
-// ── DATA ──────────────────────────────────────────────────────────────────────
-const TASKS=[
-  {id:"breakfast",emoji:"🍳",label:"朝ごはんを食べた",    points:20,note:"代謝UP・食べすぎ防止"},
-  {id:"water",    emoji:"💧",label:"水を1.5L飲む",        points:10},
-  {id:"vegFirst", emoji:"🥗",label:"野菜から先に食べた",  points:10},
+var TASKS=[
+  {id:"breakfast",emoji:"🍳",label:"朝ごはんを食べた",points:20,note:"代謝UP・食べすぎ防止"},
+  {id:"water",emoji:"💧",label:"水を1.5L飲む",points:10},
+  {id:"vegFirst",emoji:"🥗",label:"野菜から先に食べた",points:10},
   {id:"noLateEat",emoji:"🌙",label:"21時以降食べなかった",points:15},
-  {id:"snack",    emoji:"🍪",label:"間食を我慢 or 半分に",points:15},
-  {id:"walk",     emoji:"🚶",label:"15〜30分歩いた",      points:20},
-  {id:"exercise", emoji:"💪",label:"筋トレをした",        points:25},
-  {id:"weigh",    emoji:"⚖️",label:"体重を記録した",      points:5},
+  {id:"snack",emoji:"🍪",label:"間食を我慢 or 半分に",points:15},
+  {id:"walk",emoji:"🚶",label:"15〜30分歩いた",points:20},
+  {id:"exercise",emoji:"💪",label:"筋トレをした",points:25},
+  {id:"weigh",emoji:"⚖️",label:"体重を記録した",points:5}
 ];
-const BASE_TOTAL=TASKS.reduce((s,t)=>s+t.points,0);
-const streakMult=(s)=>s>=30?2.0:s>=7?1.5:s>=3?1.2:1.0;
+var BASE_TOTAL=TASKS.reduce(function(s,t){return s+t.points;},0);
+function streakMult(s){return s>=30?2.0:s>=7?1.5:s>=3?1.2:1.0;}
 
-const LEVELS=[
+var LEVELS=[
   {lv:1,xp:0,title:"見習い新郎"},{lv:2,xp:200,title:"意識高め新郎"},
   {lv:3,xp:500,title:"ダイエット戦士"},{lv:4,xp:900,title:"習慣マスター"},
   {lv:5,xp:1400,title:"鋼の意志"},{lv:6,xp:2000,title:"体型番長"},
   {lv:7,xp:2700,title:"スーツの申し子"},{lv:8,xp:3500,title:"伝説の花婿候補"},
-  {lv:9,xp:4400,title:"ウェディング覇者"},{lv:10,xp:5500,title:"完璧な新郎 💍"},
+  {lv:9,xp:4400,title:"ウェディング覇者"},{lv:10,xp:5500,title:"完璧な新郎 💍"}
 ];
-const getLevel=(xp)=>{
-  let cur=LEVELS[0],next=LEVELS[1];
-  for(let i=LEVELS.length-1;i>=0;i--){if(xp>=LEVELS[i].xp){cur=LEVELS[i];next=LEVELS[i+1]||null;break;}}
-  return{cur,next};
-};
+function getLevel(xp){
+  var cur=LEVELS[0],next=LEVELS[1];
+  for(var i=LEVELS.length-1;i>=0;i--){if(xp>=LEVELS[i].xp){cur=LEVELS[i];next=LEVELS[i+1]||null;break;}}
+  return{cur:cur,next:next};
+}
 
-const ALL_MISSIONS=[
-  {id:"m1",label:"今週、朝ごはんを5日以上食べる",     chk:(d)=>d.filter(x=>x.breakfast).length>=5},
-  {id:"m2",label:"今週、筋トレを4回以上する",         chk:(d)=>d.filter(x=>x.exercise).length>=4},
-  {id:"m3",label:"今週、毎日水1.5Lを達成する",        chk:(d)=>d.every(x=>x.water)},
-  {id:"m4",label:"今週、間食ゼロの日を3日作る",       chk:(d)=>d.filter(x=>x.snack).length>=3},
-  {id:"m5",label:"今週、21時以降食べない日を5日作る", chk:(d)=>d.filter(x=>x.noLateEat).length>=5},
-  {id:"m6",label:"今週、毎日体重を記録する",          chk:(d)=>d.every(x=>x.weigh)},
-  {id:"m7",label:"今週、ウォーキングを5回以上する",   chk:(d)=>d.filter(x=>x.walk).length>=5},
+var ALL_MISSIONS=[
+  {id:"m1",label:"今週、朝ごはんを5日以上食べる",chk:function(d){return d.filter(function(x){return x.breakfast;}).length>=5;}},
+  {id:"m2",label:"今週、筋トレを4回以上する",chk:function(d){return d.filter(function(x){return x.exercise;}).length>=4;}},
+  {id:"m3",label:"今週、毎日水1.5Lを達成する",chk:function(d){return d.every(function(x){return x.water;});}},
+  {id:"m4",label:"今週、間食ゼロの日を3日作る",chk:function(d){return d.filter(function(x){return x.snack;}).length>=3;}},
+  {id:"m5",label:"今週、21時以降食べない日を5日作る",chk:function(d){return d.filter(function(x){return x.noLateEat;}).length>=5;}},
+  {id:"m6",label:"今週、毎日体重を記録する",chk:function(d){return d.every(function(x){return x.weigh;});}},
+  {id:"m7",label:"今週、ウォーキングを5回以上する",chk:function(d){return d.filter(function(x){return x.walk;}).length>=5;}}
 ];
-const getWeekMissions=(w)=>[ALL_MISSIONS[w%ALL_MISSIONS.length],ALL_MISSIONS[(w+1)%ALL_MISSIONS.length]];
+function getWeekMissions(w){return[ALL_MISSIONS[w%ALL_MISSIONS.length],ALL_MISSIONS[(w+1)%ALL_MISSIONS.length]];}
 
-const RANKS=[
-  {name:"Bronze",min:0,  color:"#a06840",emoji:"🥉"},
-  {name:"Silver",min:40, color:"#8a9aaa",emoji:"🥈"},
-  {name:"Gold",  min:65, color:"#c9a84c",emoji:"🥇"},
-  {name:"Wedding",min:85,color:"#3a8a5a",emoji:"💍"},
+var RANKS=[
+  {name:"Bronze",min:0,color:"#a06840",emoji:"🥉"},
+  {name:"Silver",min:40,color:"#8a9aaa",emoji:"🥈"},
+  {name:"Gold",min:65,color:"#c9a84c",emoji:"🥇"},
+  {name:"Wedding",min:85,color:"#3a8a5a",emoji:"💍"}
 ];
-const getRank=(p)=>[...RANKS].reverse().find(r=>p>=r.min)||RANKS[0];
-const getNextRank=(r)=>RANKS[RANKS.findIndex(x=>x.name===r.name)+1]||null;
+function getRank(p){var r=RANKS[0];for(var i=RANKS.length-1;i>=0;i--){if(p>=RANKS[i].min){r=RANKS[i];break;}}return r;}
+function getNextRank(r){var i=RANKS.findIndex(function(x){return x.name===r.name;});return RANKS[i+1]||null;}
 
-const MEAL_RATINGS=[
-  {id:5,emoji:"😇",label:"完璧",    note:"朝昼夜◎・間食なし",          color:"#3a8a5a",pts:20},
-  {id:4,emoji:"🙂",label:"良い",    note:"3食・少し間食あり程度",        color:"#5aaa78",pts:15},
-  {id:3,emoji:"😐",label:"普通",    note:"1食抜き or 間食やや多め",      color:"#c9a84c",pts:8},
-  {id:2,emoji:"😓",label:"よくない",note:"2食抜き or 夜遅く食べた",      color:"#d08040",pts:3},
-  {id:1,emoji:"🍕",label:"ダメ",    note:"食べすぎ・ジャンク・反省あり", color:"#c05030",pts:0},
+var MEAL_RATINGS=[
+  {id:5,emoji:"😇",label:"完璧",note:"朝昼夜◎・間食なし",color:"#3a8a5a",pts:20},
+  {id:4,emoji:"🙂",label:"良い",note:"3食・少し間食あり",color:"#5aaa78",pts:15},
+  {id:3,emoji:"😐",label:"普通",note:"1食抜き or 間食多め",color:"#c9a84c",pts:8},
+  {id:2,emoji:"😓",label:"よくない",note:"2食抜き or 夜遅食",color:"#d08040",pts:3},
+  {id:1,emoji:"🍕",label:"ダメ",note:"食べすぎ・反省あり",color:"#c05030",pts:0}
 ];
 
-const EX_TYPES=[
+var EX_TYPES=[
   {id:"strength",emoji:"💪",label:"筋トレ"},
-  {id:"walk",    emoji:"🚶",label:"ウォーク"},
-  {id:"run",     emoji:"🏃",label:"ランニング"},
-  {id:"stretch", emoji:"🧘",label:"ストレッチ"},
-  {id:"swim",    emoji:"🏊",label:"水泳"},
-  {id:"cycle",   emoji:"🚴",label:"サイクル"},
-  {id:"other",   emoji:"⚡",label:"その他"},
+  {id:"walk",emoji:"🚶",label:"ウォーク"},
+  {id:"run",emoji:"🏃",label:"ランニング"},
+  {id:"stretch",emoji:"🧘",label:"ストレッチ"},
+  {id:"swim",emoji:"🏊",label:"水泳"},
+  {id:"cycle",emoji:"🚴",label:"サイクル"},
+  {id:"other",emoji:"⚡",label:"その他"}
 ];
-const EX_DURS=[10,20,30,45,60,90];
-const DOW=["月","火","水","木","金","土","日"];
+var EX_DURS=[10,20,30,45,60,90];
+var DOW=["月","火","水","木","金","土","日"];
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-const toKey=(d)=>d.toISOString().slice(0,10);
-const todayKey=()=>toKey(new Date());
-const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
-const getISOWeek=(d)=>{
-  const t=new Date(d);t.setHours(0,0,0,0);t.setDate(t.getDate()+3-(t.getDay()+6)%7);
-  const w=new Date(t.getFullYear(),0,4);
+function toKey(d){return d.toISOString().slice(0,10);}
+function todayKey(){return toKey(new Date());}
+function addDays(d,n){var r=new Date(d);r.setDate(r.getDate()+n);return r;}
+function getISOWeek(d){
+  var t=new Date(d);t.setHours(0,0,0,0);t.setDate(t.getDate()+3-(t.getDay()+6)%7);
+  var w=new Date(t.getFullYear(),0,4);
   return Math.round(((t-w)/86400000-3+(w.getDay()+6)%7)/7)+1;
-};
-const getWeekDays=()=>{
-  const now=new Date(),dow=(now.getDay()+6)%7;
-  return Array.from({length:7},(_,i)=>{const d=new Date(now);d.setDate(d.getDate()-dow+i);return toKey(d);});
-};
-const blankStore=()=>({tasks:{},weights:{},meals:{},exercises:[]});
-const el=(id)=>document.getElementById(id);
-const G={pri:"#3a8a5a",priMid:"#5aaa78",priLight:"#c8e6c9",priXLight:"#edf7ed",muted:"#6a8a6a",border:"#d4e8d4",text:"#1a2e1a"};
+}
+function getWeekDays(){
+  var now=new Date(),dow=(now.getDay()+6)%7;
+  return Array.from({length:7},function(_,i){var d=new Date(now);d.setDate(d.getDate()-dow+i);return toKey(d);});
+}
+function blankStore(){return{tasks:{},weights:{},meals:{},exercises:[]};}
+function g(id){return document.getElementById(id);}
+function h(tag,attrs,children){
+  var el=document.createElement(tag);
+  if(attrs)Object.keys(attrs).forEach(function(k){
+    if(k==="style"&&typeof attrs[k]==="object"){Object.assign(el.style,attrs[k]);}
+    else if(k.startsWith("on")){el.addEventListener(k.slice(2),attrs[k]);}
+    else{el.setAttribute(k,attrs[k]);}
+  });
+  if(children){
+    if(typeof children==="string"){el.textContent=children;}
+    else if(Array.isArray(children)){children.forEach(function(c){if(c)el.appendChild(typeof c==="string"?document.createTextNode(c):c);});}
+    else if(children instanceof Node){el.appendChild(children);}
+  }
+  return el;
+}
+function t(text){return document.createTextNode(text);}
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let store=blankStore();
-let currentTab="today";
-let wDateOffset=0;
-let selExType=null;
-let selExDur=null;
-let syncTimer=null;
-let prevLv=null;
+var store=blankStore();
+var currentTab="today";
+var wDateOffset=0;
+var selExType=null;
+var selExDur=null;
+var syncTimer=null;
+var prevLv=null;
 
-// ── SYNC ──────────────────────────────────────────────────────────────────────
 function setSyncStatus(s){
-  const el2=el("sync-status");
-  if(!el2)return;
-  const map={idle:"",syncing:"同期中...",saved:"✓ 保存済み",error:"⚠ 同期エラー"};
-  const col={idle:"",syncing:G.pri,saved:"#5aaa78",error:"#c05030"};
-  el2.textContent=map[s]||"";
-  el2.style.color=col[s]||"";
+  var el=g("sync-status");if(!el)return;
+  var map={idle:"",syncing:"同期中...",saved:"✓ 保存済み",error:"⚠ エラー"};
+  var col={idle:"",syncing:"#3a8a5a",saved:"#5aaa78",error:"#c05030"};
+  el.textContent=map[s]||"";el.style.color=col[s]||"";
 }
 function scheduleSync(){
   if(syncTimer)clearTimeout(syncTimer);
   setSyncStatus("syncing");
-  syncTimer=setTimeout(async()=>{
-    try{await ghSave(store);setSyncStatus("saved");setTimeout(()=>setSyncStatus("idle"),2000);}
-    catch(e){setSyncStatus("error");}
+  syncTimer=setTimeout(function(){
+    ghSave(store).then(function(){setSyncStatus("saved");setTimeout(function(){setSyncStatus("idle");},2000);})
+    .catch(function(){setSyncStatus("error");});
   },1200);
 }
 function updateStore(ns){store=ns;scheduleSync();render();}
 
-// ── TOAST ─────────────────────────────────────────────────────────────────────
 function showToast(msg){
-  const t=document.createElement("div");
-  t.className="toast";t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(),3000);
+  var el=document.createElement("div");
+  el.className="toast";el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(function(){el.remove();},3000);
 }
 
-// ── DERIVED ───────────────────────────────────────────────────────────────────
 function getStreak(){
-  let c=0;const now=new Date();
-  for(let i=0;;i++){
-    const d=new Date(now);d.setDate(d.getDate()-i);
-    const p=TASKS.filter(t=>((store.tasks||{})[toKey(d)]||{})[t.id]).reduce((s,t)=>s+t.points,0);
+  var c=0,now=new Date();
+  for(var i=0;;i++){
+    var d=new Date(now);d.setDate(d.getDate()-i);
+    var p=TASKS.filter(function(t){return((store.tasks||{})[toKey(d)]||{})[t.id];}).reduce(function(s,t){return s+t.points;},0);
     if(p>0)c++;else break;
   }
   return c;
 }
 function getTotalXP(){
-  return Object.entries(store.tasks||{}).reduce((sum,[date,day])=>{
-    const mp=(MEAL_RATINGS.find(r=>r.id===((store.meals||{})[date]||0))?.pts)||0;
-    return sum+TASKS.filter(t=>day[t.id]).reduce((s,t)=>s+t.points,0)+mp;
+  return Object.entries(store.tasks||{}).reduce(function(sum,pair){
+    var date=pair[0],day=pair[1];
+    var mp=(MEAL_RATINGS.find(function(r){return r.id===((store.meals||{})[date]||0);})||{pts:0}).pts;
+    return sum+TASKS.filter(function(t){return day[t.id];}).reduce(function(s,t){return s+t.points;},0)+mp;
   },0);
 }
 function getWeightHistory(){
-  return Object.entries(store.weights||{}).filter(([,v])=>v!=null)
-    .sort(([a],[b])=>a.localeCompare(b)).slice(-30)
-    .map(([date,v])=>({label:date.slice(5),v}));
+  return Object.entries(store.weights||{}).filter(function(p){return p[1]!=null;})
+    .sort(function(a,b){return a[0].localeCompare(b[0]);}).slice(-30)
+    .map(function(p){return{label:p[0].slice(5),v:p[1]};});
 }
 
-// ── SVG LINE CHART ─────────────────────────────────────────────────────────────
-function lineChart(data,color,height){
-  if(!data||data.length<2)return`<div style="height:${height}px;display:flex;align-items:center;justify-content:center;color:${G.muted};font-size:11px">2件以上で表示されます</div>`;
-  const vals=data.map(d=>d.v);
-  const mn=Math.min(...vals),mx=Math.max(...vals);
-  const pad=26,W=320,H=height;
-  const px=(i)=>pad+(i/(data.length-1))*(W-pad*2);
-  const py=(v)=>mx===mn?H/2:H-pad-(((v-mn)/(mx-mn))*(H-pad*2));
-  const pts=data.map((d,i)=>`${px(i)},${py(d.v)}`).join(" ");
-  const area=`M${px(0)},${py(data[0].v)} `+data.map((d,i)=>`L${px(i)},${py(d.v)}`).join(" ")+` L${px(data.length-1)},${H} L${px(0)},${H} Z`;
-  const step=Math.ceil(data.length/6);
-  return`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block">
-    <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.2"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
-    <path d="${area}" fill="url(#ag)"/>
-    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
-    ${data.map((d,i)=>`<circle cx="${px(i)}" cy="${py(d.v)}" r="3.5" fill="${color}"/>${(i===0||i===data.length-1||i%step===0)?`<text x="${px(i)}" y="${py(d.v)-8}" text-anchor="middle" font-size="8" fill="${G.muted}">${d.v}</text><text x="${px(i)}" y="${H-1}" text-anchor="middle" font-size="7" fill="${G.muted}">${d.label}</text>`:""}`).join("")}
-  </svg>`;
-}
-
-// ── RENDER ────────────────────────────────────────────────────────────────────
-function render(){
-  const key=todayKey();
-  const tasks=store.tasks||{};
-  const weights=store.weights||{};
-  const meals=store.meals||{};
-  const exLogs=store.exercises||[];
-  const checked=tasks[key]||{};
-
-  const streak=getStreak();
-  const mult=streakMult(streak);
-  const todayBase=TASKS.filter(t=>checked[t.id]).reduce((s,t)=>s+t.points,0);
-  const mealRating=MEAL_RATINGS.find(r=>r.id===meals[key]);
-  const mealPts=mealRating?mealRating.pts:0;
-  const todayPts=Math.round((todayBase+mealPts)*mult);
-  const todayPct=Math.round((todayBase/BASE_TOTAL)*100);
-  const doneNum=TASKS.filter(t=>checked[t.id]).length;
-
-  const totalXP=getTotalXP();
-  const {cur:curLv,next:nextLv}=getLevel(totalXP);
-  const xpInLevel=totalXP-curLv.xp;
-  const xpNeeded=nextLv?nextLv.xp-curLv.xp:1;
-  const lvPct=nextLv?Math.min(100,Math.round((xpInLevel/xpNeeded)*100)):100;
-
-  // level up check
-  if(prevLv!==null&&curLv.lv>prevLv)showToast(`🎉 LEVEL UP! Lv${curLv.lv}「${curLv.title}」`);
-  prevLv=curLv.lv;
-
-  const weekDays=getWeekDays();
-  const weekNum=getISOWeek(new Date());
-  const missions=getWeekMissions(weekNum);
-  const weekDayData=weekDays.map(k=>tasks[k]||{});
-  const weekPcts=weekDays.map(k=>{
-    const d=tasks[k]||{};
-    return Math.round((TASKS.filter(t=>d[t.id]).reduce((s,t)=>s+t.points,0)/BASE_TOTAL)*100);
+function lineChartSVG(data,color,height){
+  if(!data||data.length<2){
+    var div=document.createElement("div");
+    div.style.cssText="height:"+height+"px;display:flex;align-items:center;justify-content:center;color:#6a8a6a;font-size:11px";
+    div.textContent="2件以上で表示されます";return div;
+  }
+  var vals=data.map(function(d){return d.v;});
+  var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+  var pad=26,W=320,H=height;
+  function px(i){return pad+(i/(data.length-1))*(W-pad*2);}
+  function py(v){return mx===mn?H/2:H-pad-(((v-mn)/(mx-mn))*(H-pad*2));}
+  var pts=data.map(function(d,i){return px(i)+","+py(d.v);}).join(" ");
+  var areaD="M"+px(0)+","+py(data[0].v)+" "+data.map(function(d,i){return"L"+px(i)+","+py(d.v);}).join(" ")+" L"+px(data.length-1)+","+H+" L"+px(0)+","+H+" Z";
+  var step=Math.ceil(data.length/6);
+  var ns="http://www.w3.org/2000/svg";
+  var svg=document.createElementNS(ns,"svg");
+  svg.setAttribute("viewBox","0 0 "+W+" "+H);
+  svg.style.cssText="width:100%;height:"+H+"px;display:block";
+  var defs=document.createElementNS(ns,"defs");
+  var grad=document.createElementNS(ns,"linearGradient");
+  grad.setAttribute("id","wg");grad.setAttribute("x1","0");grad.setAttribute("y1","0");grad.setAttribute("x2","0");grad.setAttribute("y2","1");
+  var s1=document.createElementNS(ns,"stop");s1.setAttribute("offset","0%");s1.setAttribute("stop-color",color);s1.setAttribute("stop-opacity","0.2");
+  var s2=document.createElementNS(ns,"stop");s2.setAttribute("offset","100%");s2.setAttribute("stop-color",color);s2.setAttribute("stop-opacity","0");
+  grad.appendChild(s1);grad.appendChild(s2);defs.appendChild(grad);svg.appendChild(defs);
+  var area=document.createElementNS(ns,"path");area.setAttribute("d",areaD);area.setAttribute("fill","url(#wg)");svg.appendChild(area);
+  var line=document.createElementNS(ns,"polyline");line.setAttribute("points",pts);line.setAttribute("fill","none");line.setAttribute("stroke",color);line.setAttribute("stroke-width","2.2");line.setAttribute("stroke-linejoin","round");line.setAttribute("stroke-linecap","round");svg.appendChild(line);
+  data.forEach(function(d,i){
+    var c=document.createElementNS(ns,"circle");c.setAttribute("cx",px(i));c.setAttribute("cy",py(d.v));c.setAttribute("r","3.5");c.setAttribute("fill",color);svg.appendChild(c);
+    if(i===0||i===data.length-1||i%step===0){
+      var tv=document.createElementNS(ns,"text");tv.setAttribute("x",px(i));tv.setAttribute("y",py(d.v)-8);tv.setAttribute("text-anchor","middle");tv.setAttribute("font-size","8");tv.setAttribute("fill","#6a8a6a");tv.textContent=d.v;svg.appendChild(tv);
+      var tl=document.createElementNS(ns,"text");tl.setAttribute("x",px(i));tl.setAttribute("y",H-1);tl.setAttribute("text-anchor","middle");tl.setAttribute("font-size","7");tl.setAttribute("fill","#6a8a6a");tl.textContent=d.label;svg.appendChild(tl);
+    }
   });
-  const weekAvg=Math.round(weekPcts.reduce((s,v)=>s+v,0)/7);
-  const rank=getRank(weekAvg);
-  const nextRank=getNextRank(rank);
-  const missionsDone=missions.map(m=>m.chk(weekDayData.map(d=>Object.fromEntries(TASKS.map(t=>[t.id,!!d[t.id]])))));
+  return svg;
+}
 
-  const weightHistory=getWeightHistory();
-  const latestW=weightHistory.length?weightHistory[weightHistory.length-1].v:null;
-  const firstW=weightHistory.length?weightHistory[0].v:null;
-  const wDiff=latestW&&firstW?(latestW-firstW).toFixed(1):null;
-
-  const exByDay={};
-  exLogs.forEach(e=>{exByDay[e.date]=(exByDay[e.date]||0)+Number(e.duration||0);});
-  const ex14=Array.from({length:14},(_,i)=>{
-    const d=new Date();d.setDate(d.getDate()-(13-i));
-    const k=toKey(d);
+function render(){
+  var key=todayKey();
+  var tasks=store.tasks||{},weights=store.weights||{},meals=store.meals||{},exLogs=store.exercises||[];
+  var checked=tasks[key]||{};
+  var streak=getStreak(),mult=streakMult(streak);
+  var todayBase=TASKS.filter(function(t){return checked[t.id];}).reduce(function(s,t){return s+t.points;},0);
+  var mealRating=MEAL_RATINGS.find(function(r){return r.id===meals[key];})||null;
+  var mealPts=mealRating?mealRating.pts:0;
+  var todayPts=Math.round((todayBase+mealPts)*mult);
+  var todayPct=Math.round((todayBase/BASE_TOTAL)*100);
+  var doneNum=TASKS.filter(function(t){return checked[t.id];}).length;
+  var totalXP=getTotalXP();
+  var lvInfo=getLevel(totalXP);
+  var curLv=lvInfo.cur,nextLv=lvInfo.next;
+  var xpInLevel=totalXP-curLv.xp;
+  var xpNeeded=nextLv?nextLv.xp-curLv.xp:1;
+  var lvPct=nextLv?Math.min(100,Math.round((xpInLevel/xpNeeded)*100)):100;
+  if(prevLv!==null&&curLv.lv>prevLv)showToast("🎉 LEVEL UP! Lv"+curLv.lv+"「"+curLv.title+"」");
+  prevLv=curLv.lv;
+  var weekDays=getWeekDays();
+  var weekNum=getISOWeek(new Date());
+  var missions=getWeekMissions(weekNum);
+  var weekDayData=weekDays.map(function(k){return tasks[k]||{};});
+  var weekPcts=weekDays.map(function(k){
+    var d=tasks[k]||{};
+    return Math.round((TASKS.filter(function(t){return d[t.id];}).reduce(function(s,t){return s+t.points;},0)/BASE_TOTAL)*100);
+  });
+  var weekAvg=Math.round(weekPcts.reduce(function(s,v){return s+v;},0)/7);
+  var rank=getRank(weekAvg),nextRank=getNextRank(rank);
+  var missionsDone=missions.map(function(m){
+    return m.chk(weekDayData.map(function(d){
+      var obj={};TASKS.forEach(function(t){obj[t.id]=!!d[t.id];});return obj;
+    }));
+  });
+  var weightHistory=getWeightHistory();
+  var latestW=weightHistory.length?weightHistory[weightHistory.length-1].v:null;
+  var firstW=weightHistory.length?weightHistory[0].v:null;
+  var wDiff=latestW&&firstW?(latestW-firstW).toFixed(1):null;
+  var exByDay={};
+  exLogs.forEach(function(e){exByDay[e.date]=(exByDay[e.date]||0)+Number(e.duration||0);});
+  var ex14=Array.from({length:14},function(_,i){
+    var d=new Date();d.setDate(d.getDate()-(13-i));
+    var k=toKey(d);
     return{label:DOW[(d.getDay()+6)%7],v:exByDay[k]||0,key:k};
   });
-  const todayExLogs=exLogs.filter(e=>e.date===key);
-  const wTargetDate=toKey(addDays(new Date(),wDateOffset));
-  const wVal=(weights[wTargetDate]||"");
+  var todayExLogs=exLogs.filter(function(e){return e.date===key;});
+  var wTargetDate=toKey(addDays(new Date(),wDateOffset));
+  var wVal=weights[wTargetDate]||"";
 
-  // ── tab contents ──────────────────────────────────────────────────────────
-  let tabHtml="";
+  // Build DOM
+  var wrap=document.createElement("div");
+  wrap.className="wrap";
+
+  // Header
+  var hdr=document.createElement("div");
+  hdr.style.cssText="margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start";
+  var hdrLeft=document.createElement("div");
+  var hdrLabel=document.createElement("div");
+  hdrLabel.style.cssText="font-size:10px;letter-spacing:3px;color:#6a8a6a;font-weight:600;margin-bottom:2px";
+  hdrLabel.textContent="WEDDING DIET TRACKER";
+  var hdrTitle=document.createElement("div");
+  hdrTitle.style.cssText="font-size:20px;font-weight:800";
+  hdrTitle.textContent="理想の新郎へ 🤵";
+  var hdrDate=document.createElement("div");
+  hdrDate.style.cssText="font-size:11px;color:#6a8a6a;margin-top:2px";
+  hdrDate.textContent=new Date().toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"});
+  hdrLeft.appendChild(hdrLabel);hdrLeft.appendChild(hdrTitle);hdrLeft.appendChild(hdrDate);
+  var syncEl=document.createElement("div");
+  syncEl.id="sync-status";syncEl.style.cssText="font-size:10px;font-weight:600;margin-top:4px";
+  hdr.appendChild(hdrLeft);hdr.appendChild(syncEl);
+  wrap.appendChild(hdr);
+
+  // Level bar
+  var lvCard=document.createElement("div");lvCard.className="card";lvCard.style.cssText="margin-bottom:12px;padding:11px 14px";
+  var lvRow=document.createElement("div");lvRow.style.cssText="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px";
+  var lvLeft=document.createElement("div");lvLeft.style.cssText="display:flex;align-items:center;gap:8px";
+  var lvBadge=document.createElement("div");lvBadge.style.cssText="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#5aaa78,#3a8a5a);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff";
+  lvBadge.textContent=curLv.lv;
+  var lvName=document.createElement("div");lvName.style.cssText="font-size:13px;font-weight:800";lvName.textContent=curLv.title;
+  lvLeft.appendChild(lvBadge);lvLeft.appendChild(lvName);
+  var lvXP=document.createElement("div");lvXP.style.cssText="font-size:11px;color:#3a8a5a;font-weight:700";lvXP.textContent=totalXP.toLocaleString()+" XP";
+  lvRow.appendChild(lvLeft);lvRow.appendChild(lvXP);
+  var lvBarBg=document.createElement("div");lvBarBg.style.cssText="background:#edf7ed;border-radius:6px;height:6px;overflow:hidden";
+  var lvBarFill=document.createElement("div");lvBarFill.style.cssText="height:100%;width:"+lvPct+"%;background:linear-gradient(90deg,#5aaa78,#3a8a5a);border-radius:6px";
+  lvBarBg.appendChild(lvBarFill);
+  lvCard.appendChild(lvRow);lvCard.appendChild(lvBarBg);
+  if(nextLv){var lvNext=document.createElement("div");lvNext.style.cssText="font-size:9px;color:#6a8a6a;margin-top:3px;text-align:right";lvNext.textContent="Lv"+nextLv.lv+"まで "+(nextLv.xp-totalXP)+" XP";lvCard.appendChild(lvNext);}
+  wrap.appendChild(lvCard);
+
+  // Stats row
+  var statsRow=document.createElement("div");statsRow.style.cssText="display:flex;gap:7px;margin-bottom:12px";
+  [[" 🔥",streak+"日","継続中",null,mult>1?"x"+mult+"倍中":null],[rank.emoji,rank.name,"今週ランク",rank.color,null],["⚡",todayPts+"pt","今日のXP",null,null]].forEach(function(s){
+    var box=document.createElement("div");box.className="card";box.style.cssText="flex:1;padding:9px 10px";
+    var ic=document.createElement("div");ic.style.fontSize="17px";ic.textContent=s[0];
+    var val=document.createElement("div");val.style.cssText="font-size:13px;font-weight:800;color:"+(s[3]||"#3a8a5a")+";margin-top:2px";val.textContent=s[1];
+    var lbl=document.createElement("div");lbl.style.cssText="font-size:9px;color:#6a8a6a;margin-top:1px";lbl.textContent=s[2];
+    box.appendChild(ic);box.appendChild(val);box.appendChild(lbl);
+    if(s[4]){var sub=document.createElement("div");sub.style.cssText="font-size:8px;color:#5aaa78;font-weight:600;margin-top:1px";sub.textContent=s[4];box.appendChild(sub);}
+    statsRow.appendChild(box);
+  });
+  wrap.appendChild(statsRow);
+
+  // Tabs
+  var tabsEl=document.createElement("div");tabsEl.className="tabs";
+  [["today","今日"],["meal","食事"],["record","体重・運動"],["progress","進捗"]].forEach(function(tb){
+    var btn=document.createElement("button");
+    btn.className="tab"+(currentTab===tb[0]?" on":"");
+    btn.textContent=tb[1];
+    btn.addEventListener("click",function(){currentTab=tb[0];render();});
+    tabsEl.appendChild(btn);
+  });
+  wrap.appendChild(tabsEl);
+
+  // Tab content
+  var content=document.createElement("div");
 
   if(currentTab==="today"){
-    // ring
-    const circ=2*Math.PI*28;
-    const offset=circ*(1-todayPct/100);
-    tabHtml+=`<div class="card" style="display:flex;align-items:center;gap:16px">
-      <div style="position:relative;width:70px;height:70px;flex-shrink:0">
-        <svg width="70" height="70" viewBox="0 0 70 70">
-          <circle cx="35" cy="35" r="28" fill="none" stroke="${G.priLight}" stroke-width="6"/>
-          <circle cx="35" cy="35" r="28" fill="none" stroke="${G.pri}" stroke-width="6"
-            stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"
-            stroke-linecap="round" transform="rotate(-90 35 35)" style="transition:stroke-dashoffset 0.5s"/>
-        </svg>
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;font-weight:800;color:${G.pri}">${todayPct}%</div>
-      </div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:800;margin-bottom:3px">${todayPct===100?"完璧！満点🎉":todayPct>=80?"あと少し！":todayPct>=50?"いい調子！":"今日も頑張ろう！"}</div>
-        <div style="font-size:11px;color:${G.muted}">${doneNum}/${TASKS.length} タスク完了</div>
-        ${mealRating?`<div style="margin-top:4px;font-size:11px;color:${mealRating.color};font-weight:600">${mealRating.emoji} 食事: ${mealRating.label}</div>`:""}
-        ${mult>1?`<div style="margin-top:5px;font-size:10px;background:${G.priXLight};display:inline-block;padding:2px 8px;border-radius:10px;color:${G.pri};font-weight:700">🔥 ×${mult}倍ボーナス中</div>`:""}
-      </div>
-    </div>`;
+    // Ring card
+    var ringCard=document.createElement("div");ringCard.className="card";ringCard.style.cssText="display:flex;align-items:center;gap:16px;margin-bottom:12px";
+    var ringWrap=document.createElement("div");ringWrap.style.cssText="position:relative;width:70px;height:70px;flex-shrink:0";
+    var ns="http://www.w3.org/2000/svg";
+    var svg=document.createElementNS(ns,"svg");svg.setAttribute("width","70");svg.setAttribute("height","70");svg.setAttribute("viewBox","0 0 70 70");
+    var circ=2*Math.PI*28;
+    var cBg=document.createElementNS(ns,"circle");cBg.setAttribute("cx","35");cBg.setAttribute("cy","35");cBg.setAttribute("r","28");cBg.setAttribute("fill","none");cBg.setAttribute("stroke","#c8e6c9");cBg.setAttribute("stroke-width","6");
+    var cFg=document.createElementNS(ns,"circle");cFg.setAttribute("cx","35");cFg.setAttribute("cy","35");cFg.setAttribute("r","28");cFg.setAttribute("fill","none");cFg.setAttribute("stroke","#3a8a5a");cFg.setAttribute("stroke-width","6");cFg.setAttribute("stroke-dasharray",circ.toFixed(1));cFg.setAttribute("stroke-dashoffset",(circ*(1-todayPct/100)).toFixed(1));cFg.setAttribute("stroke-linecap","round");cFg.setAttribute("transform","rotate(-90 35 35)");
+    svg.appendChild(cBg);svg.appendChild(cFg);ringWrap.appendChild(svg);
+    var ringPct=document.createElement("div");ringPct.style.cssText="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;font-weight:800;color:#3a8a5a";ringPct.textContent=todayPct+"%";ringWrap.appendChild(ringPct);
+    var ringInfo=document.createElement("div");ringInfo.style.flex="1";
+    var ringMsg=document.createElement("div");ringMsg.style.cssText="font-size:13px;font-weight:800;margin-bottom:3px";
+    ringMsg.textContent=todayPct===100?"完璧！満点🎉":todayPct>=80?"あと少し！":todayPct>=50?"いい調子！":"今日も頑張ろう！";
+    var ringDone=document.createElement("div");ringDone.style.cssText="font-size:11px;color:#6a8a6a";ringDone.textContent=doneNum+"/"+TASKS.length+" タスク完了";
+    ringInfo.appendChild(ringMsg);ringInfo.appendChild(ringDone);
+    if(mealRating){var mealBadge=document.createElement("div");mealBadge.style.cssText="margin-top:4px;font-size:11px;color:"+mealRating.color+";font-weight:600";mealBadge.textContent=mealRating.emoji+" 食事: "+mealRating.label;ringInfo.appendChild(mealBadge);}
+    if(mult>1){var multBadge=document.createElement("div");multBadge.style.cssText="margin-top:5px;font-size:10px;background:#edf7ed;display:inline-block;padding:2px 8px;border-radius:10px;color:#3a8a5a;font-weight:700";multBadge.textContent="🔥 x"+mult+"倍ボーナス中";ringInfo.appendChild(multBadge);}
+    ringCard.appendChild(ringWrap);ringCard.appendChild(ringInfo);
+    content.appendChild(ringCard);
 
-    // tasks
-    TASKS.forEach(task=>{
-      const done=!!checked[task.id];
-      const bpts=Math.round(task.points*mult);
-      const isB=task.id==="breakfast";
-      tabHtml+=`<button class="task-btn${done?" done":isB&&!done?" breakfast-pending":""}" onclick="toggleTask('${task.id}')">
-        <span style="font-size:20px">${task.emoji}</span>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:${done?700:500};color:${done?G.text:G.muted}">${task.label}</div>
-          ${isB&&!done?`<div style="font-size:9px;color:#c08020;margin-top:2px">${task.note}</div>`:""}
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:11px;font-weight:700;color:${done?G.pri:isB?"#c08020":G.border}">+${bpts}pt</div>
-          ${mult>1?`<div style="font-size:8px;color:${G.priMid}">base ${task.points}</div>`:""}
-        </div>
-        <div class="check-circle${done?" done"}">${done?"✓":""}</div>
-      </button>`;
+    // Tasks
+    TASKS.forEach(function(task){
+      var done=!!checked[task.id];
+      var isB=task.id==="breakfast";
+      var btn=document.createElement("button");
+      btn.style.cssText="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;border:1.5px solid "+(done?"#3a8a5a":isB&&!done?"#e0a040":"#d4e8d4")+";background:"+(done?"rgba(58,138,90,0.05)":isB&&!done?"#fffbf0":"#fff")+";cursor:pointer;text-align:left;width:100%;margin-bottom:7px";
+      btn.addEventListener("click",function(){toggleTask(task.id);});
+      var emoji=document.createElement("span");emoji.style.fontSize="20px";emoji.textContent=task.emoji;
+      var info=document.createElement("div");info.style.flex="1";
+      var lbl=document.createElement("div");lbl.style.cssText="font-size:13px;font-weight:"+(done?700:500)+";color:"+(done?"#1a2e1a":"#6a8a6a");lbl.textContent=task.label;
+      info.appendChild(lbl);
+      if(isB&&!done&&task.note){var note=document.createElement("div");note.style.cssText="font-size:9px;color:#c08020;margin-top:2px";note.textContent=task.note;info.appendChild(note);}
+      var pts=document.createElement("div");pts.style.cssText="text-align:right;flex-shrink:0";
+      var ptsVal=document.createElement("div");ptsVal.style.cssText="font-size:11px;font-weight:700;color:"+(done?"#3a8a5a":isB?"#c08020":"#d4e8d4");ptsVal.textContent="+"+Math.round(task.points*mult)+"pt";
+      pts.appendChild(ptsVal);
+      if(mult>1){var base=document.createElement("div");base.style.cssText="font-size:8px;color:#5aaa78";base.textContent="base "+task.points;pts.appendChild(base);}
+      var circle=document.createElement("div");circle.style.cssText="width:20px;height:20px;border-radius:50%;background:"+(done?"#3a8a5a":"#d4e8d4")+";display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0";circle.textContent=done?"✓":"";
+      btn.appendChild(emoji);btn.appendChild(info);btn.appendChild(pts);btn.appendChild(circle);
+      content.appendChild(btn);
     });
 
-    // meal shortcut
-    tabHtml+=`<div class="card" style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="setTab('meal')">
-      <span style="font-size:22px">${mealRating?mealRating.emoji:"🍽️"}</span>
-      <div style="flex:1">
-        <div style="font-size:12px;font-weight:700">${mealRating?"食事記録: "+mealRating.label:"食事の記録をつける"}</div>
-        <div style="font-size:10px;color:${G.muted};margin-top:1px">${mealRating?`+${mealRating.pts}pt獲得`:"「食事」タブで記録 →"}</div>
-      </div>
-    </div>`;
+    // Meal shortcut
+    var mealShort=document.createElement("div");mealShort.className="card";mealShort.style.cssText="display:flex;align-items:center;gap:12px;cursor:pointer";
+    mealShort.addEventListener("click",function(){currentTab="meal";render();});
+    var mealIco=document.createElement("span");mealIco.style.fontSize="22px";mealIco.textContent=mealRating?mealRating.emoji:"🍽️";
+    var mealInfo=document.createElement("div");mealInfo.style.flex="1";
+    var mealTitle=document.createElement("div");mealTitle.style.cssText="font-size:12px;font-weight:700";mealTitle.textContent=mealRating?"食事記録: "+mealRating.label:"食事の記録をつける";
+    var mealSub=document.createElement("div");mealSub.style.cssText="font-size:10px;color:#6a8a6a;margin-top:1px";mealSub.textContent=mealRating?"+"+mealRating.pts+"pt獲得":"「食事」タブで記録 →";
+    mealInfo.appendChild(mealTitle);mealInfo.appendChild(mealSub);
+    mealShort.appendChild(mealIco);mealShort.appendChild(mealInfo);
+    content.appendChild(mealShort);
   }
 
   else if(currentTab==="meal"){
-    tabHtml+=`<div class="card">
-      <div class="label">🍽️ 今日の食事</div>
-      <div style="font-size:11px;color:${G.muted};margin-bottom:14px">今日の食事全体を振り返って選んでください</div>`;
-    MEAL_RATINGS.forEach(r=>{
-      const sel=meals[key]===r.id;
-      tabHtml+=`<button class="meal-btn" onclick="rateMeal(${r.id})" style="border-color:${sel?r.color:G.border};background:${sel?r.color+"15":"#fff"}">
-        <span style="font-size:26px;flex-shrink:0">${r.emoji}</span>
-        <div style="flex:1">
-          <span style="font-size:14px;font-weight:700;color:${sel?r.color:G.text}">${r.label}</span>
-          <span style="font-size:10px;color:${G.muted};margin-left:6px">${r.note}</span>
-        </div>
-        ${sel?`<span style="font-size:11px;font-weight:700;color:${r.color};flex-shrink:0">+${r.pts}pt</span>`:""}
-        <div style="width:18px;height:18px;border-radius:50%;border:2px solid ${sel?r.color:G.border};background:${sel?r.color:"transparent"};display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;flex-shrink:0">${sel?"✓":""}</div>
-      </button>`;
+    var mealCard=document.createElement("div");mealCard.className="card";mealCard.style.marginBottom="14px";
+    var mealCardLbl=document.createElement("div");mealCardLbl.className="lbl";mealCardLbl.textContent="🍽️ 今日の食事";
+    var mealDesc=document.createElement("div");mealDesc.style.cssText="font-size:11px;color:#6a8a6a;margin-bottom:14px";mealDesc.textContent="今日の食事全体を振り返って選んでください";
+    mealCard.appendChild(mealCardLbl);mealCard.appendChild(mealDesc);
+    MEAL_RATINGS.forEach(function(r){
+      var sel=meals[key]===r.id;
+      var btn=document.createElement("button");
+      btn.style.cssText="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:12px;border:2px solid "+(sel?r.color:"#d4e8d4")+";background:"+(sel?r.color+"26":"#fff")+";cursor:pointer;text-align:left;width:100%;margin-bottom:7px";
+      btn.addEventListener("click",function(){rateMeal(r.id);});
+      var ico=document.createElement("span");ico.style.cssText="font-size:26px;flex-shrink:0";ico.textContent=r.emoji;
+      var info=document.createElement("div");info.style.flex="1";
+      var nameEl=document.createElement("span");nameEl.style.cssText="font-size:14px;font-weight:700;color:"+(sel?r.color:"#1a2e1a");nameEl.textContent=r.label;
+      var noteEl=document.createElement("span");noteEl.style.cssText="font-size:10px;color:#6a8a6a;margin-left:6px";noteEl.textContent=r.note;
+      info.appendChild(nameEl);info.appendChild(noteEl);
+      var chk=document.createElement("div");chk.style.cssText="width:18px;height:18px;border-radius:50%;border:2px solid "+(sel?r.color:"#d4e8d4")+";background:"+(sel?r.color:"transparent")+";display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;flex-shrink:0";chk.textContent=sel?"✓":"";
+      btn.appendChild(ico);btn.appendChild(info);
+      if(sel){var pEl=document.createElement("span");pEl.style.cssText="font-size:11px;font-weight:700;color:"+r.color+";flex-shrink:0";pEl.textContent="+"+r.pts+"pt";btn.appendChild(pEl);}
+      btn.appendChild(chk);
+      mealCard.appendChild(btn);
     });
-    if(meals[key])tabHtml+=`<div style="padding:10px 12px;background:${G.priXLight};border-radius:10px;font-size:11px;color:${G.pri};font-weight:600;text-align:center">✅ 今日の食事を記録しました</div>`;
-    tabHtml+=`</div>`;
+    if(meals[key]){var mealOk=document.createElement("div");mealOk.style.cssText="padding:10px 12px;background:#edf7ed;border-radius:10px;font-size:11px;color:#3a8a5a;font-weight:600;text-align:center";mealOk.textContent="✅ 今日の食事を記録しました";mealCard.appendChild(mealOk);}
+    content.appendChild(mealCard);
 
-    // meal history
-    tabHtml+=`<div class="card"><div class="label">食事履歴（直近7日）</div>
-      <div style="display:flex;gap:6px;justify-content:space-between">
-        ${Array.from({length:7},(_,i)=>{
-          const d=new Date();d.setDate(d.getDate()-(6-i));
-          const k=toKey(d);
-          const r=MEAL_RATINGS.find(x=>x.id===meals[k]);
-          const isToday=k===key;
-          return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
-            <span style="font-size:18px;opacity:${r?1:0.2}">${r?r.emoji:"・"}</span>
-            <div style="font-size:8px;color:${isToday?G.pri:G.muted};font-weight:${isToday?700:400}">${DOW[(d.getDay()+6)%7]}</div>
-          </div>`;
-        }).join("")}
-      </div>
-    </div>`;
+    // Meal history
+    var mhCard=document.createElement("div");mhCard.className="card";
+    var mhLbl=document.createElement("div");mhLbl.className="lbl";mhLbl.textContent="食事履歴（直近7日）";
+    var mhRow=document.createElement("div");mhRow.style.cssText="display:flex;gap:6px;justify-content:space-between";
+    for(var i=0;i<7;i++){
+      var d=new Date();d.setDate(d.getDate()-(6-i));
+      var k=toKey(d);
+      var mr=MEAL_RATINGS.find(function(x){return x.id===meals[k];})||null;
+      var isToday=k===key;
+      var col=document.createElement("div");col.style.cssText="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px";
+      var eEl=document.createElement("span");eEl.style.cssText="font-size:18px;opacity:"+(mr?1:0.2);eEl.textContent=mr?mr.emoji:"・";
+      var dEl=document.createElement("div");dEl.style.cssText="font-size:8px;color:"+(isToday?"#3a8a5a":"#6a8a6a")+";font-weight:"+(isToday?700:400);dEl.textContent=DOW[(d.getDay()+6)%7];
+      col.appendChild(eEl);col.appendChild(dEl);mhRow.appendChild(col);
+    }
+    mhCard.appendChild(mhLbl);mhCard.appendChild(mhRow);
+    content.appendChild(mhCard);
   }
 
   else if(currentTab==="record"){
-    // weight
-    const wLabel=wDateOffset===0?"今日":wDateOffset===-1?"昨日":addDays(new Date(),wDateOffset).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"});
-    tabHtml+=`<div class="card">
-      <div class="label">⚖️ 体重記録</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;background:${G.priXLight};border-radius:10px;padding:8px 12px">
-        <button onclick="setWOffset(${wDateOffset-1})" style="border:none;background:none;font-size:18px;cursor:pointer;color:${G.pri};padding:0 4px">‹</button>
-        <div style="font-size:12px;font-weight:700">${wLabel}</div>
-        <button onclick="setWOffset(${Math.min(0,wDateOffset+1)})" style="border:none;background:none;font-size:18px;cursor:pointer;color:${wDateOffset===0?G.border:G.pri};padding:0 4px" ${wDateOffset===0?"disabled":""}>›</button>
-      </div>
-      ${latestW?`<div style="display:flex;gap:10px;margin-bottom:12px">
-        <div style="flex:1;background:${G.priXLight};border-radius:10px;padding:10px 12px;text-align:center">
-          <div style="font-size:9px;color:${G.muted};margin-bottom:2px">最新</div>
-          <div style="font-size:20px;font-weight:800;color:${G.pri}">${latestW}<span style="font-size:11px">kg</span></div>
-        </div>
-        ${wDiff!==null?`<div style="flex:1;background:${G.priXLight};border-radius:10px;padding:10px 12px;text-align:center">
-          <div style="font-size:9px;color:${G.muted};margin-bottom:2px">記録開始から</div>
-          <div style="font-size:20px;font-weight:800;color:${Number(wDiff)<=0?"#3a8a5a":"#c05030"}">${Number(wDiff)>0?"+":""}${wDiff}<span style="font-size:11px">kg</span></div>
-        </div>`:""}
-      </div>`:""}
-      ${lineChart(weightHistory,G.pri,88)}
-      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
-        <div style="display:flex;gap:6px;align-items:center">
-          <input id="w-input" type="number" step="0.1" placeholder="体重を入力 (kg)" value="${wVal}"
-            style="flex:1;padding:10px 12px;border-radius:9px;border:1.5px solid ${G.border};font-size:15px;font-weight:700;color:${G.text};background:${G.bg||"#f2f6f2"};text-align:center"/>
-          <span style="font-size:13px;color:${G.muted};flex-shrink:0">kg</span>
-        </div>
-        <div style="display:flex;gap:5px">
-          ${[[-0.5,"−0.5"],[-0.1,"−0.1"],[0.1,"+0.1"],[0.5,"+0.5"]].map(([d,l])=>`<button class="btn-adj" style="color:${d<0?G.pri:"#c05030"}" onclick="adjWeight(${d})">${l}</button>`).join("")}
-        </div>
-        <button class="btn-pri" id="w-save-btn" onclick="saveWeight()">この体重で記録</button>
-      </div>
-    </div>`;
+    // Weight card
+    var wCard=document.createElement("div");wCard.className="card";wCard.style.marginBottom="14px";
+    var wLbl=document.createElement("div");wLbl.className="lbl";wLbl.textContent="⚖️ 体重記録";
+    wCard.appendChild(wLbl);
 
-    // exercise
-    tabHtml+=`<div class="card">
-      <div class="label">💪 運動記録（今日）</div>
-      <div style="margin-bottom:14px">
-        <div style="font-size:10px;color:${G.muted};margin-bottom:6px">直近14日の運動時間（分）</div>
-        <div style="display:flex;align-items:flex-end;gap:4px;height:56px">
-          ${ex14.map(d=>{
-            const isToday=d.key===key;
-            const maxV=Math.max(...ex14.map(x=>x.v),1);
-            return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
-              ${d.v>0?`<div style="font-size:7px;color:${G.pri};font-weight:600">${d.v}</div>`:""}
-              <div style="width:100%;height:${Math.max(3,(d.v/maxV)*44)}px;background:${isToday?G.pri:d.v>0?G.priLight:G.border};border-radius:4px"></div>
-              <div style="font-size:7px;color:${isToday?G.pri:G.muted};font-weight:${isToday?700:400}">${d.label}</div>
-            </div>`;
-          }).join("")}
-        </div>
-      </div>
-      <div style="font-size:10px;color:${G.muted};font-weight:700;letter-spacing:1px;margin-bottom:8px">種目</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">
-        ${EX_TYPES.map(t=>`<button class="ex-type-btn${selExType&&selExType.id===t.id?" sel":""}" onclick="selType('${t.id}')">
-          <span style="font-size:20px">${t.emoji}</span>
-          <span style="font-size:9px;font-weight:${selExType&&selExType.id===t.id?700:500};color:${selExType&&selExType.id===t.id?G.pri:G.muted}">${t.label}</span>
-        </button>`).join("")}
-      </div>
-      <div style="font-size:10px;color:${G.muted};font-weight:700;letter-spacing:1px;margin-bottom:8px">時間</div>
-      <div style="margin-bottom:14px">
-        ${EX_DURS.map(d=>`<button class="ex-dur-btn${selExDur===d?" sel":""}" onclick="selDur(${d})">${d}分</button>`).join("")}
-      </div>
-      <button class="btn-pri" id="ex-save-btn" onclick="saveExercise()" ${!selExType||!selExDur?"disabled":""}>
-        ${!selExType||!selExDur?"種目と時間を選んでください":"記録する"}
-      </button>
-      ${todayExLogs.length>0?`<div style="margin-top:14px">
-        <div style="font-size:10px;color:${G.muted};font-weight:700;margin-bottom:7px">今日の記録</div>
-        ${todayExLogs.map(e=>`<div style="display:flex;align-items:center;gap:10px;background:${G.priXLight};border-radius:9px;padding:8px 12px;margin-bottom:6px">
-          <span style="font-size:18px">${e.emoji}</span>
-          <div style="flex:1"><span style="font-size:12px;font-weight:700">${e.type}</span><span style="font-size:12px;color:${G.pri};font-weight:700;margin-left:6px">${e.duration}分</span></div>
-          <button onclick="deleteEx(${e.id})" style="border:none;background:none;color:${G.muted};font-size:18px;cursor:pointer;padding:0 4px;line-height:1">×</button>
-        </div>`).join("")}
-      </div>`:""}
-    </div>`;
+    // Date nav
+    var wNav=document.createElement("div");wNav.style.cssText="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;background:#edf7ed;border-radius:10px;padding:8px 12px";
+    var wPrev=document.createElement("button");wPrev.style.cssText="border:none;background:none;font-size:18px;cursor:pointer;color:#3a8a5a;padding:0 4px";wPrev.textContent="‹";wPrev.addEventListener("click",function(){wDateOffset--;render();});
+    var wDateLbl=document.createElement("div");wDateLbl.style.cssText="font-size:12px;font-weight:700";
+    wDateLbl.textContent=wDateOffset===0?"今日":wDateOffset===-1?"昨日":addDays(new Date(),wDateOffset).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"});
+    var wNext=document.createElement("button");wNext.style.cssText="border:none;background:none;font-size:18px;cursor:pointer;color:"+(wDateOffset===0?"#d4e8d4":"#3a8a5a")+";padding:0 4px";wNext.textContent="›";wNext.disabled=wDateOffset===0;wNext.addEventListener("click",function(){if(wDateOffset<0){wDateOffset++;render();}});
+    wNav.appendChild(wPrev);wNav.appendChild(wDateLbl);wNav.appendChild(wNext);
+    wCard.appendChild(wNav);
 
+    if(latestW){
+      var wSumRow=document.createElement("div");wSumRow.style.cssText="display:flex;gap:10px;margin-bottom:12px";
+      var wLatBox=document.createElement("div");wLatBox.style.cssText="flex:1;background:#edf7ed;border-radius:10px;padding:10px 12px;text-align:center";
+      var wLatLbl=document.createElement("div");wLatLbl.style.cssText="font-size:9px;color:#6a8a6a;margin-bottom:2px";wLatLbl.textContent="最新";
+      var wLatVal=document.createElement("div");wLatVal.style.cssText="font-size:20px;font-weight:800;color:#3a8a5a";wLatVal.textContent=latestW+"kg";
+      wLatBox.appendChild(wLatLbl);wLatBox.appendChild(wLatVal);wSumRow.appendChild(wLatBox);
+      if(wDiff!==null){
+        var wDiffBox=document.createElement("div");wDiffBox.style.cssText="flex:1;background:#edf7ed;border-radius:10px;padding:10px 12px;text-align:center";
+        var wDiffLbl=document.createElement("div");wDiffLbl.style.cssText="font-size:9px;color:#6a8a6a;margin-bottom:2px";wDiffLbl.textContent="記録開始から";
+        var wDiffVal=document.createElement("div");wDiffVal.style.cssText="font-size:20px;font-weight:800;color:"+(Number(wDiff)<=0?"#3a8a5a":"#c05030");wDiffVal.textContent=(Number(wDiff)>0?"+":"")+wDiff+"kg";
+        wDiffBox.appendChild(wDiffLbl);wDiffBox.appendChild(wDiffVal);wSumRow.appendChild(wDiffBox);
+      }
+      wCard.appendChild(wSumRow);
+    }
+    wCard.appendChild(lineChartSVG(weightHistory,"#3a8a5a",88));
+
+    // Weight input
+    var wInputEl=document.createElement("input");wInputEl.type="number";wInputEl.step="0.1";wInputEl.placeholder="体重を入力 (kg)";wInputEl.value=wVal;
+    wInputEl.style.cssText="width:100%;padding:10px 12px;border-radius:9px;border:1.5px solid #d4e8d4;font-size:15px;font-weight:700;color:#1a2e1a;background:#f2f6f2;text-align:center;margin-top:12px;box-sizing:border-box";
+    wCard.appendChild(wInputEl);
+    var adjRow=document.createElement("div");adjRow.style.cssText="display:flex;gap:5px;margin-top:8px";
+    [[-0.5,"−0.5"],[-0.1,"−0.1"],[0.1,"+0.1"],[0.5,"+0.5"]].forEach(function(pair){
+      var ab=document.createElement("button");ab.style.cssText="flex:1;padding:10px 0;border-radius:9px;border:1.5px solid #d4e8d4;background:#fff;font-size:12px;font-weight:700;cursor:pointer;color:"+(pair[0]<0?"#3a8a5a":"#c05030");ab.textContent=pair[1];
+      ab.addEventListener("click",function(){var cur=parseFloat(wInputEl.value)||0;var next=Math.round((cur+pair[0])*10)/10;if(next>=30&&next<=300)wInputEl.value=next;});
+      adjRow.appendChild(ab);
+    });
+    wCard.appendChild(adjRow);
+    var wSaveBtn=document.createElement("button");wSaveBtn.className="pbtn";wSaveBtn.textContent="この体重で記録";
+    wSaveBtn.addEventListener("click",function(){
+      var v=parseFloat(wInputEl.value);if(isNaN(v)||v<30||v>300)return;
+      updateStore(Object.assign({},store,{weights:Object.assign({},store.weights,Object.fromEntries([[wTargetDate,v]]))}));
+      wSaveBtn.textContent="✓ 記録しました";wSaveBtn.style.background="#5aaa78";
+      setTimeout(function(){wSaveBtn.textContent="この体重で記録";wSaveBtn.style.background="#3a8a5a";},1500);
+    });
+    wCard.appendChild(wSaveBtn);
+    content.appendChild(wCard);
+
+    // Exercise card
+    var exCard=document.createElement("div");exCard.className="card";exCard.style.marginBottom="14px";
+    var exLbl=document.createElement("div");exLbl.className="lbl";exLbl.textContent="💪 運動記録（今日）";
+    exCard.appendChild(exLbl);
+
+    // 14-day bar
+    var barDiv=document.createElement("div");barDiv.style.marginBottom="14px";
+    var barNote=document.createElement("div");barNote.style.cssText="font-size:10px;color:#6a8a6a;margin-bottom:6px";barNote.textContent="直近14日の運動時間（分）";
+    var barRow=document.createElement("div");barRow.style.cssText="display:flex;align-items:flex-end;gap:4px;height:56px";
+    var maxV=Math.max.apply(null,ex14.map(function(x){return x.v;}).concat([1]));
+    ex14.forEach(function(d){
+      var isToday=d.key===key;
+      var col=document.createElement("div");col.style.cssText="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px";
+      if(d.v>0){var vLbl=document.createElement("div");vLbl.style.cssText="font-size:7px;color:#3a8a5a;font-weight:600";vLbl.textContent=d.v;col.appendChild(vLbl);}
+      var bar=document.createElement("div");bar.style.cssText="width:100%;height:"+Math.max(3,(d.v/maxV)*44)+"px;background:"+(isToday?"#3a8a5a":d.v>0?"#c8e6c9":"#d4e8d4")+";border-radius:4px";
+      var dLbl=document.createElement("div");dLbl.style.cssText="font-size:7px;color:"+(isToday?"#3a8a5a":"#6a8a6a")+";font-weight:"+(isToday?700:400);dLbl.textContent=d.label;
+      col.appendChild(bar);col.appendChild(dLbl);barRow.appendChild(col);
+    });
+    barDiv.appendChild(barNote);barDiv.appendChild(barRow);exCard.appendChild(barDiv);
+
+    // Type selector
+    var typeLbl=document.createElement("div");typeLbl.style.cssText="font-size:10px;color:#6a8a6a;font-weight:700;letter-spacing:1px;margin-bottom:8px";typeLbl.textContent="種目";
+    exCard.appendChild(typeLbl);
+    var typeGrid=document.createElement("div");typeGrid.style.cssText="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px";
+    EX_TYPES.forEach(function(t){
+      var sel=selExType&&selExType.id===t.id;
+      var tb=document.createElement("button");tb.style.cssText="padding:8px 4px;border-radius:10px;border:1.5px solid "+(sel?"#3a8a5a":"#d4e8d4")+";background:"+(sel?"#edf7ed":"#fff")+";cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px";
+      tb.addEventListener("click",function(){selExType=t;render();});
+      var tIco=document.createElement("span");tIco.style.fontSize="20px";tIco.textContent=t.emoji;
+      var tLbl=document.createElement("span");tLbl.style.cssText="font-size:9px;font-weight:"+(sel?700:500)+";color:"+(sel?"#3a8a5a":"#6a8a6a");tLbl.textContent=t.label;
+      tb.appendChild(tIco);tb.appendChild(tLbl);typeGrid.appendChild(tb);
+    });
+    exCard.appendChild(typeGrid);
+
+    // Duration selector
+    var durLbl=document.createElement("div");durLbl.style.cssText="font-size:10px;color:#6a8a6a;font-weight:700;letter-spacing:1px;margin-bottom:8px";durLbl.textContent="時間";
+    exCard.appendChild(durLbl);
+    var durRow=document.createElement("div");durRow.style.marginBottom="14px";
+    EX_DURS.forEach(function(d){
+      var sel=selExDur===d;
+      var db=document.createElement("button");db.style.cssText="padding:8px 14px;border-radius:9px;border:1.5px solid "+(sel?"#3a8a5a":"#d4e8d4")+";background:"+(sel?"#edf7ed":"#fff")+";font-size:13px;font-weight:"+(sel?700:500)+";color:"+(sel?"#3a8a5a":"#6a8a6a")+";cursor:pointer;margin-right:6px;margin-bottom:6px";
+      db.textContent=d+"分";
+      db.addEventListener("click",function(){selExDur=d;render();});
+      durRow.appendChild(db);
+    });
+    exCard.appendChild(durRow);
+
+    var exSaveBtn=document.createElement("button");exSaveBtn.className="pbtn";exSaveBtn.disabled=!selExType||!selExDur;exSaveBtn.textContent=!selExType||!selExDur?"種目と時間を選んでください":"記録する";
+    exSaveBtn.addEventListener("click",function(){saveExercise();});
+    exCard.appendChild(exSaveBtn);
+
+    // Today logs
+    if(todayExLogs.length>0){
+      var todayLogsDiv=document.createElement("div");todayLogsDiv.style.marginTop="14px";
+      var tlLbl=document.createElement("div");tlLbl.style.cssText="font-size:10px;color:#6a8a6a;font-weight:700;margin-bottom:7px";tlLbl.textContent="今日の記録";
+      todayLogsDiv.appendChild(tlLbl);
+      todayExLogs.forEach(function(e){
+        var row=document.createElement("div");row.style.cssText="display:flex;align-items:center;gap:10px;background:#edf7ed;border-radius:9px;padding:8px 12px;margin-bottom:6px";
+        var eIco=document.createElement("span");eIco.style.fontSize="18px";eIco.textContent=e.emoji;
+        var eInfo=document.createElement("div");eInfo.style.flex="1";
+        var eType=document.createElement("span");eType.style.cssText="font-size:12px;font-weight:700";eType.textContent=e.type;
+        var eDur=document.createElement("span");eDur.style.cssText="font-size:12px;color:#3a8a5a;font-weight:700;margin-left:6px";eDur.textContent=e.duration+"分";
+        eInfo.appendChild(eType);eInfo.appendChild(eDur);
+        var del=document.createElement("button");del.style.cssText="border:none;background:none;color:#6a8a6a;font-size:18px;cursor:pointer;padding:0 4px;line-height:1";del.textContent="×";
+        (function(eid){del.addEventListener("click",function(){deleteEx(eid);});})(e.id);
+        row.appendChild(eIco);row.appendChild(eInfo);row.appendChild(del);
+        todayLogsDiv.appendChild(row);
+      });
+      exCard.appendChild(todayLogsDiv);
+    }
+    content.appendChild(exCard);
+
+    // Exercise history
     if(exLogs.length>0){
-      tabHtml+=`<div class="card"><div class="label">運動履歴（直近10件）</div>
-        ${[...exLogs].reverse().slice(0,10).map((e,i,arr)=>`
-          <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:${i<arr.length-1?`1px solid ${G.border}`:"none"}">
-            <div style="font-size:9px;color:${G.muted};flex-shrink:0;width:38px">${e.date.slice(5)}</div>
-            <span style="font-size:14px">${e.emoji}</span>
-            <div style="flex:1;font-size:12px">${e.type}</div>
-            <div style="font-size:11px;font-weight:700;color:${G.pri};flex-shrink:0">${e.duration}分</div>
-          </div>`).join("")}
-      </div>`;
+      var ehCard=document.createElement("div");ehCard.className="card";
+      var ehLbl=document.createElement("div");ehLbl.className="lbl";ehLbl.textContent="運動履歴（直近10件）";
+      ehCard.appendChild(ehLbl);
+      var ehList=[].concat(exLogs).reverse().slice(0,10);
+      ehList.forEach(function(e,i){
+        var row=document.createElement("div");row.style.cssText="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:"+(i<ehList.length-1?"1px solid #d4e8d4":"none");
+        var dEl=document.createElement("div");dEl.style.cssText="font-size:9px;color:#6a8a6a;flex-shrink:0;width:38px";dEl.textContent=e.date.slice(5);
+        var iEl=document.createElement("span");iEl.style.fontSize="14px";iEl.textContent=e.emoji;
+        var tEl=document.createElement("div");tEl.style.cssText="flex:1;font-size:12px";tEl.textContent=e.type;
+        var durEl=document.createElement("div");durEl.style.cssText="font-size:11px;font-weight:700;color:#3a8a5a;flex-shrink:0";durEl.textContent=e.duration+"分";
+        row.appendChild(dEl);row.appendChild(iEl);row.appendChild(tEl);row.appendChild(durEl);
+        ehCard.appendChild(row);
+      });
+      content.appendChild(ehCard);
     }
   }
 
   else if(currentTab==="progress"){
-    // rank
-    tabHtml+=`<div class="card" style="background:linear-gradient(135deg,${rank.color}15,#fff);border-color:${rank.color}40">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div class="label">今週のランク</div>
-          <div style="font-size:22px;font-weight:800;color:${rank.color}">${rank.emoji} ${rank.name}</div>
-          <div style="font-size:11px;color:${G.muted};margin-top:2px">週平均達成率: <b>${weekAvg}%</b></div>
-        </div>
-        <div style="text-align:right">
-          ${nextRank?`<div style="font-size:9px;color:${G.muted}">次のランクまで</div>
-            <div style="font-size:20px;font-weight:800;color:${nextRank.color}">${nextRank.min-weekAvg}%</div>
-            <div style="font-size:9px;color:${G.muted}">${nextRank.emoji} ${nextRank.name}</div>`
-          :`<div style="font-size:12px;font-weight:800;color:${G.pri}">最高ランク！💍</div>`}
-        </div>
-      </div>
-    </div>`;
+    // Rank card
+    var rkCard=document.createElement("div");rkCard.className="card";rkCard.style.cssText="margin-bottom:14px;background:linear-gradient(135deg,"+rank.color+"26,#fff);border-color:"+rank.color+"66";
+    var rkRow=document.createElement("div");rkRow.style.cssText="display:flex;justify-content:space-between;align-items:center";
+    var rkLeft=document.createElement("div");
+    var rkLbl=document.createElement("div");rkLbl.className="lbl";rkLbl.textContent="今週のランク";
+    var rkName=document.createElement("div");rkName.style.cssText="font-size:22px;font-weight:800;color:"+rank.color;rkName.textContent=rank.emoji+" "+rank.name;
+    var rkAvg=document.createElement("div");rkAvg.style.cssText="font-size:11px;color:#6a8a6a;margin-top:2px";rkAvg.textContent="週平均達成率: "+weekAvg+"%";
+    rkLeft.appendChild(rkLbl);rkLeft.appendChild(rkName);rkLeft.appendChild(rkAvg);
+    var rkRight=document.createElement("div");rkRight.style.textAlign="right";
+    if(nextRank){var nrLbl=document.createElement("div");nrLbl.style.cssText="font-size:9px;color:#6a8a6a";nrLbl.textContent="次のランクまで";var nrVal=document.createElement("div");nrVal.style.cssText="font-size:20px;font-weight:800;color:"+nextRank.color;nrVal.textContent=(nextRank.min-weekAvg)+"%";var nrName=document.createElement("div");nrName.style.cssText="font-size:9px;color:#6a8a6a";nrName.textContent=nextRank.emoji+" "+nextRank.name;rkRight.appendChild(nrLbl);rkRight.appendChild(nrVal);rkRight.appendChild(nrName);}
+    else{var topMsg=document.createElement("div");topMsg.style.cssText="font-size:12px;font-weight:800;color:#3a8a5a";topMsg.textContent="最高ランク！💍";rkRight.appendChild(topMsg);}
+    rkRow.appendChild(rkLeft);rkRow.appendChild(rkRight);rkCard.appendChild(rkRow);
+    content.appendChild(rkCard);
 
-    // week chart
-    tabHtml+=`<div class="card"><div class="label">今週の達成率</div>
-      <div style="display:flex;align-items:flex-end;gap:6px;height:62px">
-        ${weekDays.map((k,i)=>{
-          const isToday=k===key,isPast=k<key;
-          return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-            <div style="font-size:8px;color:${weekPcts[i]>0?G.pri:G.muted};font-weight:600">${weekPcts[i]>0?weekPcts[i]+"%":""}</div>
-            <div style="width:100%;height:${Math.max(3,weekPcts[i]*0.52)}px;background:${isToday?G.pri:weekPcts[i]>0?G.priLight:G.border};border-radius:4px;opacity:${!isPast&&!isToday?0.3:1}"></div>
-            <div style="font-size:9px;color:${isToday?G.pri:G.muted};font-weight:${isToday?700:400}">${DOW[i]}</div>
-          </div>`;
-        }).join("")}
-      </div>
-    </div>`;
+    // Week chart
+    var wkCard=document.createElement("div");wkCard.className="card";wkCard.style.marginBottom="14px";
+    var wkLbl=document.createElement("div");wkLbl.className="lbl";wkLbl.textContent="今週の達成率";
+    var wkBars=document.createElement("div");wkBars.style.cssText="display:flex;align-items:flex-end;gap:6px;height:62px";
+    weekDays.forEach(function(k,i){
+      var isToday=k===key,isPast=k<key;
+      var col=document.createElement("div");col.style.cssText="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px";
+      var pLbl=document.createElement("div");pLbl.style.cssText="font-size:8px;color:"+(weekPcts[i]>0?"#3a8a5a":"#6a8a6a")+";font-weight:600";pLbl.textContent=weekPcts[i]>0?weekPcts[i]+"%":"";
+      var bar=document.createElement("div");bar.style.cssText="width:100%;height:"+Math.max(3,weekPcts[i]*0.52)+"px;background:"+(isToday?"#3a8a5a":weekPcts[i]>0?"#c8e6c9":"#d4e8d4")+";border-radius:4px;opacity:"+(!isPast&&!isToday?0.3:1);
+      var dLbl=document.createElement("div");dLbl.style.cssText="font-size:9px;color:"+(isToday?"#3a8a5a":"#6a8a6a")+";font-weight:"+(isToday?700:400);dLbl.textContent=DOW[i];
+      col.appendChild(pLbl);col.appendChild(bar);col.appendChild(dLbl);wkBars.appendChild(col);
+    });
+    wkCard.appendChild(wkLbl);wkCard.appendChild(wkBars);content.appendChild(wkCard);
 
-    // missions
-    tabHtml+=`<div style="font-size:10px;color:${G.muted};font-weight:700;letter-spacing:2px;margin-bottom:10px">今週のミッション</div>`;
-    missions.forEach((m,i)=>{
-      const done=missionsDone[i];
-      tabHtml+=`<div class="card" style="padding:12px 14px;border-color:${done?G.pri:G.border};background:${done?`${G.pri}0d`:"#fff"}">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:20px">${done?"🏆":"🎯"}</span>
-          <div style="flex:1">
-            <div style="font-size:12px;font-weight:${done?800:500};color:${done?G.text:G.muted}">${m.label}</div>
-            <div style="font-size:10px;color:${done?G.pri:G.muted};margin-top:2px;font-weight:600">${done?"✅ クリア！+50XP":"未達成"}</div>
-          </div>
-        </div>
-      </div>`;
+    // Missions
+    var msLbl=document.createElement("div");msLbl.style.cssText="font-size:10px;color:#6a8a6a;font-weight:700;letter-spacing:2px;margin-bottom:10px";msLbl.textContent="今週のミッション";content.appendChild(msLbl);
+    missions.forEach(function(m,i){
+      var done=missionsDone[i];
+      var mc=document.createElement("div");mc.className="card";mc.style.cssText="padding:12px 14px;margin-bottom:8px;border-color:"+(done?"#3a8a5a":"#d4e8d4")+";background:"+(done?"rgba(58,138,90,0.05)":"#fff");
+      var mr=document.createElement("div");mr.style.cssText="display:flex;align-items:center;gap:10px";
+      var mIco=document.createElement("span");mIco.style.fontSize="20px";mIco.textContent=done?"🏆":"🎯";
+      var mInfo=document.createElement("div");mInfo.style.flex="1";
+      var mTitle=document.createElement("div");mTitle.style.cssText="font-size:12px;font-weight:"+(done?800:500)+";color:"+(done?"#1a2e1a":"#6a8a6a");mTitle.textContent=m.label;
+      var mStatus=document.createElement("div");mStatus.style.cssText="font-size:10px;color:"+(done?"#3a8a5a":"#6a8a6a")+";margin-top:2px;font-weight:600";mStatus.textContent=done?"✅ クリア！+50XP":"未達成";
+      mInfo.appendChild(mTitle);mInfo.appendChild(mStatus);mr.appendChild(mIco);mr.appendChild(mInfo);mc.appendChild(mr);content.appendChild(mc);
     });
 
-    // level roadmap
-    tabHtml+=`<div class="card"><div class="label">全レベルロードマップ</div>
-      ${LEVELS.map(lv=>{
-        const unlocked=totalXP>=lv.xp,isCur=lv.lv===curLv.lv;
-        return`<div style="display:flex;align-items:center;gap:10px;opacity:${unlocked?1:0.4};padding:6px 10px;border-radius:8px;background:${isCur?G.priXLight:"transparent"};border:1px solid ${isCur?G.priLight:"transparent"}">
-          <div style="width:24px;height:24px;border-radius:50%;background:${unlocked?G.pri:G.border};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">${lv.lv}</div>
-          <div style="flex:1">
-            <div style="font-size:12px;font-weight:${isCur?800:500};color:${isCur?G.text:G.muted}">${lv.title}</div>
-            <div style="font-size:9px;color:${G.muted}">${lv.xp.toLocaleString()} XP〜</div>
-          </div>
-          ${isCur?`<span style="font-size:10px;color:${G.pri};font-weight:700">← 現在</span>`:""}
-          ${unlocked&&!isCur?`<span style="font-size:13px">✅</span>`:""}
-        </div>`;
-      }).join("")}
-    </div>`;
+    // Level roadmap
+    var rmCard=document.createElement("div");rmCard.className="card";
+    var rmLbl=document.createElement("div");rmLbl.className="lbl";rmLbl.textContent="全レベルロードマップ";rmCard.appendChild(rmLbl);
+    LEVELS.forEach(function(lv){
+      var unlocked=totalXP>=lv.xp,isCur=lv.lv===curLv.lv;
+      var row=document.createElement("div");row.style.cssText="display:flex;align-items:center;gap:10px;opacity:"+(unlocked?1:0.4)+";padding:6px 10px;border-radius:8px;background:"+(isCur?"#edf7ed":"transparent")+";border:1px solid "+(isCur?"#c8e6c9":"transparent");
+      var badge=document.createElement("div");badge.style.cssText="width:24px;height:24px;border-radius:50%;background:"+(unlocked?"#3a8a5a":"#d4e8d4")+";display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0";badge.textContent=lv.lv;
+      var info=document.createElement("div");info.style.flex="1";
+      var name=document.createElement("div");name.style.cssText="font-size:12px;font-weight:"+(isCur?800:500)+";color:"+(isCur?"#1a2e1a":"#6a8a6a");name.textContent=lv.title;
+      var xpLbl=document.createElement("div");xpLbl.style.cssText="font-size:9px;color:#6a8a6a";xpLbl.textContent=lv.xp.toLocaleString()+" XP〜";
+      info.appendChild(name);info.appendChild(xpLbl);
+      row.appendChild(badge);row.appendChild(info);
+      if(isCur){var cur=document.createElement("span");cur.style.cssText="font-size:10px;color:#3a8a5a;font-weight:700";cur.textContent="← 現在";row.appendChild(cur);}
+      else if(unlocked){var ck=document.createElement("span");ck.style.fontSize="13px";ck.textContent="✅";row.appendChild(ck);}
+      rmCard.appendChild(row);
+    });
+    content.appendChild(rmCard);
   }
 
-  // ── full page ──────────────────────────────────────────────────────────────
-  el("root").innerHTML=`<div id="app">
-    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start">
-      <div>
-        <div style="font-size:10px;letter-spacing:3px;color:${G.muted};font-weight:600;margin-bottom:2px">WEDDING DIET TRACKER</div>
-        <div style="font-size:20px;font-weight:800">理想の新郎へ 🤵</div>
-        <div style="font-size:11px;color:${G.muted};margin-top:2px">${new Date().toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"})}</div>
-      </div>
-      <div id="sync-status" style="font-size:10px;font-weight:600;margin-top:4px"></div>
-    </div>
+  var footer=document.createElement("div");footer.style.cssText="text-align:center;margin-top:24px;font-size:10px;color:#6a8a6a";footer.textContent="毎日少しずつ、必ず変わる 🌿";
+  content.appendChild(footer);
+  wrap.appendChild(content);
 
-    <div class="card" style="margin-bottom:12px;padding:11px 14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,${G.priMid},${G.pri});display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff">${curLv.lv}</div>
-          <div style="font-size:13px;font-weight:800">${curLv.title}</div>
-        </div>
-        <div style="font-size:11px;color:${G.pri};font-weight:700">${totalXP.toLocaleString()} XP</div>
-      </div>
-      <div style="background:${G.priXLight};border-radius:6px;height:6px;overflow:hidden">
-        <div style="height:100%;width:${lvPct}%;background:linear-gradient(90deg,${G.priMid},${G.pri});border-radius:6px;transition:width 0.6s ease"></div>
-      </div>
-      ${nextLv?`<div style="font-size:9px;color:${G.muted};margin-top:3px;text-align:right">Lv${nextLv.lv}まで ${nextLv.xp-totalXP} XP</div>`:""}
-    </div>
-
-    <div style="display:flex;gap:7px;margin-bottom:12px">
-      <div class="card stat-box"><div style="font-size:17px">🔥</div><div style="font-size:13px;font-weight:800;color:${G.pri};margin-top:2px">${streak}日</div><div style="font-size:9px;color:${G.muted};margin-top:1px">継続中</div>${mult>1?`<div style="font-size:8px;color:${G.priMid};font-weight:600;margin-top:1px">×${mult}倍中</div>`:""}</div>
-      <div class="card stat-box"><div style="font-size:17px">${rank.emoji}</div><div style="font-size:13px;font-weight:800;color:${rank.color};margin-top:2px">${rank.name}</div><div style="font-size:9px;color:${G.muted};margin-top:1px">今週ランク</div></div>
-      <div class="card stat-box"><div style="font-size:17px">⚡</div><div style="font-size:13px;font-weight:800;color:${G.pri};margin-top:2px">${todayPts}pt</div><div style="font-size:9px;color:${G.muted};margin-top:1px">今日のXP</div></div>
-    </div>
-
-    <div class="tabs">
-      <button class="tab${currentTab==="today"?" active":""}" onclick="setTab('today')">今日</button>
-      <button class="tab${currentTab==="meal"?" active":""}" onclick="setTab('meal')">食事</button>
-      <button class="tab${currentTab==="record"?" active":""}" onclick="setTab('record')">体重・運動</button>
-      <button class="tab${currentTab==="progress"?" active":""}" onclick="setTab('progress')">進捗</button>
-    </div>
-
-    ${tabHtml}
-
-    <div style="text-align:center;margin-top:24px;font-size:10px;color:${G.muted}">毎日少しずつ、必ず変わる 🌿</div>
-  </div>`;
+  var root=g("root");root.innerHTML="";root.appendChild(wrap);
 }
-
-// ── ACTIONS ───────────────────────────────────────────────────────────────────
-function setTab(t){currentTab=t;render();}
-function setWOffset(n){wDateOffset=n;render();}
 
 function toggleTask(id){
-  const key=todayKey();
-  const tasks=store.tasks||{};
-  const checked=tasks[key]||{};
-  const updated={...checked,[id]:!checked[id]};
-  updateStore({...store,tasks:{...tasks,[key]:updated}});
+  var key=todayKey(),tasks=store.tasks||{},checked=Object.assign({},tasks[key]||{});
+  checked[id]=!checked[id];
+  var newTasks=Object.assign({},tasks);newTasks[key]=checked;
+  updateStore(Object.assign({},store,{tasks:newTasks}));
 }
-
 function rateMeal(id){
-  updateStore({...store,meals:{...(store.meals||{}),[todayKey()]:id}});
+  var newMeals=Object.assign({},store.meals||{});newMeals[todayKey()]=id;
+  updateStore(Object.assign({},store,{meals:newMeals}));
 }
-
-function adjWeight(delta){
-  const inp=el("w-input");
-  if(!inp)return;
-  const cur=parseFloat(inp.value)||0;
-  const next=Math.round((cur+delta)*10)/10;
-  if(next>=30&&next<=300)inp.value=next;
-}
-
-function saveWeight(){
-  const inp=el("w-input");
-  if(!inp)return;
-  const v=parseFloat(inp.value);
-  if(isNaN(v)||v<30||v>300)return;
-  const wTargetDate=toKey(addDays(new Date(),wDateOffset));
-  updateStore({...store,weights:{...(store.weights||{}),[wTargetDate]:v}});
-  const btn=el("w-save-btn");
-  if(btn){btn.textContent="✓ 記録しました";btn.style.background="#5aaa78";setTimeout(()=>{if(btn){btn.textContent="この体重で記録";btn.style.background=G.pri;}},1500);}
-}
-
-function selType(id){selExType=EX_TYPES.find(t=>t.id===id)||null;render();}
-function selDur(d){selExDur=d;render();}
-
 function saveExercise(){
   if(!selExType||!selExDur)return;
-  const entry={id:Date.now(),date:todayKey(),type:selExType.label,emoji:selExType.emoji,duration:selExDur};
-  updateStore({...store,exercises:[...(store.exercises||[]),entry]});
+  var entry={id:Date.now(),date:todayKey(),type:selExType.label,emoji:selExType.emoji,duration:selExDur};
+  var newEx=(store.exercises||[]).concat([entry]);
+  updateStore(Object.assign({},store,{exercises:newEx}));
   selExType=null;selExDur=null;
 }
-
 function deleteEx(id){
-  updateStore({...store,exercises:(store.exercises||[]).filter(e=>e.id!==id)});
+  var newEx=(store.exercises||[]).filter(function(e){return e.id!==id;});
+  updateStore(Object.assign({},store,{exercises:newEx}));
 }
 
-// ── SETUP SCREEN ──────────────────────────────────────────────────────────────
 function renderSetup(errMsg){
-  el("root").innerHTML=`<div class="setup">
-    <div class="setup-card">
-      <div style="font-size:32px;text-align:center;margin-bottom:12px">🤵</div>
-      <div style="font-size:18px;font-weight:800;text-align:center;margin-bottom:6px">初回セットアップ</div>
-      <div style="font-size:12px;color:${G.muted};text-align:center;margin-bottom:20px;line-height:1.6">
-        GitHubのPersonal Access Tokenを入力してください。データの保存に使用します。
-      </div>
-      <input id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxx"
-        style="width:100%;padding:12px;border-radius:10px;border:1.5px solid ${G.border};font-size:13px;color:${G.text};background:#f2f6f2;margin-bottom:10px;box-sizing:border-box"/>
-      ${errMsg?`<div style="font-size:11px;color:#c05030;margin-bottom:10px;line-height:1.5">${errMsg}</div>`:""}
-      <button id="setup-btn" class="btn-pri" onclick="doSetup()">接続してスタート</button>
-      <div style="font-size:10px;color:${G.muted};margin-top:12px;text-align:center;line-height:1.6">
-        トークンはこの端末のみに保存されます
-      </div>
-    </div>
-  </div>`;
+  var root=g("root");root.innerHTML="";
+  var wrap=document.createElement("div");wrap.className="setup";
+  var card=document.createElement("div");card.className="scard";
+  var ico=document.createElement("div");ico.style.cssText="font-size:32px;text-align:center;margin-bottom:12px";ico.textContent="🤵";
+  var title=document.createElement("div");title.style.cssText="font-size:18px;font-weight:800;text-align:center;margin-bottom:6px";title.textContent="初回セットアップ";
+  var desc=document.createElement("div");desc.style.cssText="font-size:12px;color:#6a8a6a;text-align:center;margin-bottom:20px;line-height:1.6";desc.textContent="GitHubのPersonal Access Tokenを入力してください。データの保存に使用します。";
+  var inp=document.createElement("input");inp.type="password";inp.placeholder="ghp_xxxxxxxxxxxx";inp.id="token-input";inp.style.cssText="width:100%;padding:12px;border-radius:10px;border:1.5px solid #d4e8d4;font-size:13px;color:#1a2e1a;background:#f2f6f2;margin-bottom:10px;box-sizing:border-box";
+  var btn=document.createElement("button");btn.className="pbtn";btn.id="setup-btn";btn.textContent="接続してスタート";btn.style.marginTop="0";
+  btn.addEventListener("click",function(){doSetup(inp,btn);});
+  card.appendChild(ico);card.appendChild(title);card.appendChild(desc);
+  if(errMsg){var err=document.createElement("div");err.style.cssText="font-size:11px;color:#c05030;margin-bottom:10px;line-height:1.5";err.textContent=errMsg;card.appendChild(err);}
+  card.appendChild(inp);card.appendChild(btn);
+  var note=document.createElement("div");note.style.cssText="font-size:10px;color:#6a8a6a;margin-top:12px;text-align:center;line-height:1.6";note.textContent="トークンはこの端末のみに保存されます";
+  card.appendChild(note);wrap.appendChild(card);root.appendChild(wrap);
 }
 
-async function doSetup(){
-  const inp=el("token-input");
-  const btn=el("setup-btn");
-  if(!inp||!inp.value.trim())return;
-  setToken(inp.value.trim());
-  btn.disabled=true;
-  btn.innerHTML=`<span class="spinner"></span> 接続中...`;
-  try{
-    const data=await ghFetch();
-    store=data||blankStore();
-    render();
-  }catch(e){
-    setToken("");
-    renderSetup("トークンが正しくないか、data.jsonが見つかりません。確認してください。");
-  }
+function doSetup(inp,btn){
+  var val=inp.value.trim();if(!val)return;
+  setToken(val);btn.disabled=true;btn.innerHTML='<span class="sp"></span> 接続中...';
+  ghFetch().then(function(data){store=data||blankStore();render();})
+  .catch(function(){setToken("");renderSetup("トークンが正しくないか、data.jsonが見つかりません。");});
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-async function init(){
-  el("root").innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px"><div class="spinner"></div><div style="font-size:13px;color:${G.muted}">読み込み中...</div></div>`;
-  const token=getToken();
+function showLoading(){
+  var root=g("root");root.innerHTML="";
+  var div=document.createElement("div");div.style.cssText="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px";
+  var sp=document.createElement("div");sp.className="sp";
+  var msg=document.createElement("div");msg.style.cssText="font-size:13px;color:#6a8a6a";msg.textContent="読み込み中...";
+  div.appendChild(sp);div.appendChild(msg);root.appendChild(div);
+}
+
+function init(){
+  showLoading();
+  var token=getToken();
   if(!token){renderSetup();return;}
-  try{
-    store=await ghFetch()||blankStore();
-    render();
-  }catch(e){
-    setToken("");renderSetup("再接続が必要です。トークンを再入力してください。");
-  }
+  ghFetch().then(function(data){store=data||blankStore();render();})
+  .catch(function(){setToken("");renderSetup("再接続が必要です。トークンを再入力してください。");});
 }
 
 init();
