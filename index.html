@@ -106,7 +106,7 @@ const LS={
 };
 
 // GitHub API
-const ghH=(token)=(>({"Authorization":`token ${token}`,"Content-Type":"application/json","Accept":"application/vnd.github.v3+json"}));
+const ghH=(token)=>({"Authorization":`token ${token}`,"Content-Type":"application/json","Accept":"application/vnd.github.v3+json"});
 async function ghFetch(token){
   const res=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`,{headers:ghH(token)});
   if(!res.ok)throw new Error(res.status);
