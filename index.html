@@ -18,19 +18,14 @@ body{background:#f2f6f2;font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',s
 input,select,button{font-family:inherit}
 input:focus{outline:none;border-color:#3a8a5a!important;box-shadow:0 0 0 3px rgba(58,138,90,0.12)}
 ::-webkit-scrollbar{display:none}
-@keyframes fadeUp{
-  0%{opacity:0;transform:translateX(-50%) translateY(10px)}
-  15%{opacity:1;transform:translateX(-50%) translateY(0)}
-  80%{opacity:1}100%{opacity:0}
-}
-@keyframes popIn{0%{transform:scale(0.94);opacity:0.5}100%{transform:scale(1);opacity:1}}
-.pop{animation:popIn 0.15s ease}
+@keyframes fadeUp{0%{opacity:0;transform:translateX(-50%) translateY(10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState,useEffect,useRef}=React;
+const {useState,useEffect,useRef,useCallback}=React;
 
 const G={
   bg:"#f2f6f2",card:"#fff",pri:"#3a8a5a",priMid:"#5aaa78",
@@ -38,7 +33,36 @@ const G={
   muted:"#6a8a6a",border:"#d4e8d4",
 };
 
-// ── DAILY TASKS ───────────────────────────────────────────────────────────────
+// ── GITHUB CONFIG ─────────────────────────────────────────────────────────────
+const GH_REPO = "ksuzukimailjp-arch/diet-tracker";
+const GH_FILE = "data.json";
+const GH_API  = `https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}`;
+const LS_TOKEN= "gh_token";
+const LS_SHA  = "gh_sha";
+
+const getToken=()=>localStorage.getItem(LS_TOKEN)||"";
+const getSha  =()=>localStorage.getItem(LS_SHA)||"";
+const setToken=(t)=>localStorage.setItem(LS_TOKEN,t);
+const setSha  =(s)=>localStorage.setItem(LS_SHA,s);
+
+async function ghFetch(store){
+  const res=await fetch(GH_API,{headers:{Authorization:`token ${getToken()}`,Accept:"application/vnd.github.v3+json"}});
+  if(!res.ok)throw new Error("fetch_failed");
+  const json=await res.json();
+  setSha(json.sha);
+  return JSON.parse(atob(json.content.replace(/\n/g,"")));
+}
+
+async function ghSave(store){
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(store,null,2))));
+  const body={message:"update data",content,sha:getSha()};
+  const res=await fetch(GH_API,{method:"PUT",headers:{Authorization:`token ${getToken()}`,Accept:"application/vnd.github.v3+json","Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!res.ok)throw new Error("save_failed");
+  const json=await res.json();
+  setSha(json.content.sha);
+}
+
+// ── DATA ──────────────────────────────────────────────────────────────────────
 const TASKS=[
   {id:"breakfast",emoji:"🍳",label:"朝ごはんを食べた",    points:20,note:"代謝UP・食べすぎ防止"},
   {id:"water",    emoji:"💧",label:"水を1.5L飲む",        points:10},
@@ -52,7 +76,6 @@ const TASKS=[
 const BASE_TOTAL=TASKS.reduce((s,t)=>s+t.points,0);
 const streakMult=(s)=>s>=30?2.0:s>=7?1.5:s>=3?1.2:1.0;
 
-// ── LEVELS ────────────────────────────────────────────────────────────────────
 const LEVELS=[
   {lv:1, xp:0,    title:"見習い新郎"},
   {lv:2, xp:200,  title:"意識高め新郎"},
@@ -71,7 +94,6 @@ const getLevel=(xp)=>{
   return{cur,next};
 };
 
-// ── MISSIONS ──────────────────────────────────────────────────────────────────
 const ALL_MISSIONS=[
   {id:"m1",label:"今週、朝ごはんを5日以上食べる",     check:(d)=>d.filter(x=>x.breakfast).length>=5},
   {id:"m2",label:"今週、筋トレを4回以上する",         check:(d)=>d.filter(x=>x.exercise).length>=4},
@@ -83,7 +105,6 @@ const ALL_MISSIONS=[
 ];
 const getWeekMissions=(w)=>[ALL_MISSIONS[w%ALL_MISSIONS.length],ALL_MISSIONS[(w+1)%ALL_MISSIONS.length]];
 
-// ── RANKS ─────────────────────────────────────────────────────────────────────
 const RANKS=[
   {name:"Bronze", min:0,  color:"#a06840",emoji:"🥉"},
   {name:"Silver", min:40, color:"#8a9aaa",emoji:"🥈"},
@@ -93,16 +114,14 @@ const RANKS=[
 const getRank    =(p)=>[...RANKS].reverse().find(r=>p>=r.min)||RANKS[0];
 const getNextRank=(r)=>RANKS[RANKS.findIndex(x=>x.name===r.name)+1]||null;
 
-// ── MEAL RATINGS ──────────────────────────────────────────────────────────────
 const MEAL_RATINGS=[
-  {id:5,emoji:"😇",label:"完璧",   note:"朝昼夜◎・間食なし",         color:"#3a8a5a",pts:20},
-  {id:4,emoji:"🙂",label:"良い",   note:"3食・少し間食あり程度",       color:"#5aaa78",pts:15},
-  {id:3,emoji:"😐",label:"普通",   note:"1食抜き or 間食やや多め",     color:"#c9a84c",pts:8},
-  {id:2,emoji:"😓",label:"よくない",note:"2食抜き or 夜遅く食べた",   color:"#d08040",pts:3},
-  {id:1,emoji:"🍕",label:"ダメ",   note:"食べすぎ・ジャンク・反省あり",color:"#c05030",pts:0},
+  {id:5,emoji:"😇",label:"完璧",    note:"朝昼夜◎・間食なし",          color:"#3a8a5a",pts:20},
+  {id:4,emoji:"🙂",label:"良い",    note:"3食・少し間食あり程度",        color:"#5aaa78",pts:15},
+  {id:3,emoji:"😐",label:"普通",    note:"1食抜き or 間食やや多め",      color:"#c9a84c",pts:8},
+  {id:2,emoji:"😓",label:"よくない",note:"2食抜き or 夜遅く食べた",      color:"#d08040",pts:3},
+  {id:1,emoji:"🍕",label:"ダメ",    note:"食べすぎ・ジャンク・反省あり", color:"#c05030",pts:0},
 ];
 
-// ── EXERCISE ──────────────────────────────────────────────────────────────────
 const EX_TYPES=[
   {id:"strength",emoji:"💪",label:"筋トレ"},
   {id:"walk",    emoji:"🚶",label:"ウォーキング"},
@@ -113,10 +132,8 @@ const EX_TYPES=[
   {id:"other",   emoji:"⚡",label:"その他"},
 ];
 const EX_DURATIONS=[10,20,30,45,60,90];
-
 const DOW=["月","火","水","木","金","土","日"];
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
 const toKey=(d)=>d.toISOString().slice(0,10);
 const todayKey=()=>toKey(new Date());
 const getISOWeek=(d)=>{
@@ -130,13 +147,7 @@ const getWeekDays=()=>{
 };
 const fmt=(d)=>d.toISOString().slice(0,10);
 const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
-
-// ── STORAGE ───────────────────────────────────────────────────────────────────
-// { tasks:{date:{taskId:bool}}, weights:{date:number}, meals:{date:ratingId}, exercises:[{id,date,type,duration}] }
-const SK="groomDiet5";
-const loadStore=()=>{try{return JSON.parse(localStorage.getItem(SK)||"{}");}catch{return{};}};
 const blankStore=()=>({tasks:{},weights:{},meals:{},exercises:[]});
-const saveStore=(s)=>{try{localStorage.setItem(SK,JSON.stringify(s));}catch{}};
 
 // ── LINE CHART ────────────────────────────────────────────────────────────────
 function LineChart({data,color=G.pri,height=90}){
@@ -155,12 +166,7 @@ function LineChart({data,color=G.pri,height=90}){
   const step=Math.ceil(data.length/6);
   return(
     <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height,display:"block"}}>
-      <defs>
-        <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.2"/>
-          <stop offset="100%" stopColor={color} stopOpacity="0"/>
-        </linearGradient>
-      </defs>
+      <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.2"/><stop offset="100%" stopColor={color} stopOpacity="0"/></linearGradient></defs>
       <path d={area} fill="url(#ag)"/>
       <polyline points={pts} fill="none" stroke={color} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round"/>
       {data.map((d,i)=>(
@@ -176,31 +182,24 @@ function LineChart({data,color=G.pri,height=90}){
   );
 }
 
-// ── WEIGHT INPUT COMPONENT ────────────────────────────────────────────────────
+// ── WEIGHT INPUT ──────────────────────────────────────────────────────────────
 function WeightInput({value,onChange,onSave,saved}){
   const adj=(delta)=>{
     const cur=parseFloat(value)||0;
     const next=Math.round((cur+delta)*10)/10;
     if(next>=30&&next<=300)onChange(String(next));
   };
-  const BtnAdj=({d,label})=>(
-    <button onClick={()=>adj(d)} style={{flex:1,padding:"10px 0",borderRadius:9,border:`1.5px solid ${G.border}`,background:G.card,fontSize:12,fontWeight:700,color:d<0?G.pri:"#c05030",cursor:"pointer"}}>
-      {label}
-    </button>
-  );
   return(
     <div style={{display:"flex",flexDirection:"column",gap:8}}>
       <div style={{display:"flex",gap:6,alignItems:"center"}}>
-        <input type="number" step="0.1" placeholder="体重を入力 (kg)"
-          value={value} onChange={e=>onChange(e.target.value)}
+        <input type="number" step="0.1" placeholder="体重を入力 (kg)" value={value} onChange={e=>onChange(e.target.value)}
           style={{flex:1,padding:"10px 12px",borderRadius:9,border:`1.5px solid ${G.border}`,fontSize:15,fontWeight:700,color:G.text,background:G.bg,textAlign:"center"}}/>
         <span style={{fontSize:13,color:G.muted,flexShrink:0}}>kg</span>
       </div>
       <div style={{display:"flex",gap:5}}>
-        <BtnAdj d={-0.5} label="−0.5"/>
-        <BtnAdj d={-0.1} label="−0.1"/>
-        <BtnAdj d={+0.1} label="+0.1"/>
-        <BtnAdj d={+0.5} label="+0.5"/>
+        {[[-0.5,"−0.5"],[-0.1,"−0.1"],[+0.1,"+0.1"],[+0.5,"+0.5"]].map(([d,l])=>(
+          <button key={l} onClick={()=>adj(d)} style={{flex:1,padding:"10px 0",borderRadius:9,border:`1.5px solid ${G.border}`,background:G.card,fontSize:12,fontWeight:700,color:d<0?G.pri:"#c05030",cursor:"pointer"}}>{l}</button>
+        ))}
       </div>
       <button onClick={onSave} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",background:saved?"#5aaa78":G.pri,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",transition:"background 0.2s"}}>
         {saved?"✓ 記録しました":"この体重で記録"}
@@ -214,17 +213,14 @@ function ExerciseLogger({onSave}){
   const [selType,setSelType]=useState(null);
   const [selDur, setSelDur] =useState(null);
   const [saved,  setSaved]  =useState(false);
-
   const handleSave=()=>{
     if(!selType||!selDur)return;
     onSave({type:selType,duration:selDur});
     setSaved(true);
     setTimeout(()=>{setSaved(false);setSelType(null);setSelDur(null);},1200);
   };
-
   return(
     <div>
-      {/* Type buttons */}
       <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:1,marginBottom:8}}>種目</div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
         {EX_TYPES.map(t=>{
@@ -237,8 +233,6 @@ function ExerciseLogger({onSave}){
           );
         })}
       </div>
-
-      {/* Duration buttons */}
       <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:1,marginBottom:8}}>時間</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
         {EX_DURATIONS.map(dur=>{
@@ -250,7 +244,6 @@ function ExerciseLogger({onSave}){
           );
         })}
       </div>
-
       <button onClick={handleSave} disabled={!selType||!selDur} style={{width:"100%",padding:"11px",borderRadius:10,border:"none",background:saved?"#5aaa78":(!selType||!selDur)?"#c8e6c9":G.pri,color:"#fff",fontSize:13,fontWeight:700,cursor:(!selType||!selDur)?"default":"pointer",transition:"background 0.2s"}}>
         {saved?"✓ 記録しました！":(!selType||!selDur)?"種目と時間を選んでください":"記録する"}
       </button>
@@ -284,37 +277,117 @@ function MealRater({current,onRate}){
   );
 }
 
+// ── SPINNER ───────────────────────────────────────────────────────────────────
+function Spinner(){
+  return <div style={{width:20,height:20,border:`3px solid ${G.priLight}`,borderTop:`3px solid ${G.pri}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",display:"inline-block"}}/>;
+}
+
+// ── SETUP SCREEN ──────────────────────────────────────────────────────────────
+function SetupScreen({onDone}){
+  const [token,setToken]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [err,setErr]=useState("");
+  const handleSubmit=async()=>{
+    if(!token.trim())return;
+    setLoading(true);setErr("");
+    setToken(token.trim());
+    localStorage.setItem(LS_TOKEN,token.trim());
+    try{
+      const data=await ghFetch();
+      onDone(data);
+    }catch(e){
+      setErr("トークンが正しくないか、data.jsonが見つかりません。確認してください。");
+      setLoading(false);
+    }
+  };
+  return(
+    <div style={{minHeight:"100vh",background:G.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{background:G.card,borderRadius:20,padding:28,width:"100%",maxWidth:400,boxShadow:"0 4px 24px rgba(40,90,60,0.12)"}}>
+        <div style={{fontSize:32,textAlign:"center",marginBottom:12}}>🤵</div>
+        <div style={{fontSize:18,fontWeight:800,textAlign:"center",marginBottom:6}}>初回セットアップ</div>
+        <div style={{fontSize:12,color:G.muted,textAlign:"center",marginBottom:20,lineHeight:1.6}}>
+          GitHubのPersonal Access Tokenを入力してください。データをGitHubに保存するために必要です。
+        </div>
+        <input type="password" placeholder="ghp_xxxxxxxxxxxx" value={token} onChange={e=>setToken(e.target.value)}
+          style={{width:"100%",padding:"12px",borderRadius:10,border:`1.5px solid ${G.border}`,fontSize:13,color:G.text,background:G.bg,marginBottom:10,boxSizing:"border-box"}}/>
+        {err&&<div style={{fontSize:11,color:"#c05030",marginBottom:10,lineHeight:1.5}}>{err}</div>}
+        <button onClick={handleSubmit} disabled={loading||!token.trim()} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:G.pri,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          {loading?<><Spinner/>接続中...</>:"接続してスタート"}
+        </button>
+        <div style={{fontSize:10,color:G.muted,marginTop:12,textAlign:"center",lineHeight:1.6}}>
+          トークンはこの端末にのみ保存されます。他人には共有しないでください。
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 function App(){
-  const [store,setStore]=useState(()=>{const s=loadStore();return Object.keys(s).length?s:blankStore();});
-  const [tab,setTab]=useState("today");
-  const [lvAnim,setLvAnim]=useState(null);
+  const [store,setStore]   =useState(null); // null = loading
+  const [tab,setTab]       =useState("today");
+  const [lvAnim,setLvAnim] =useState(null);
+  const [syncState,setSyncState]=useState("idle"); // idle | syncing | saved | error
+  const [needSetup,setNeedSetup]=useState(false);
   const prevLvRef=useRef(null);
+  const syncTimer=useRef(null);
 
   // weight state
-  const [wInput,setWInput]=useState("");
-  const [wSaved,setWSaved]=useState(false);
-  const [wDateOffset,setWDateOffset]=useState(0); // 0=today, -1=yesterday...
+  const [wInput,setWInput]       =useState("");
+  const [wSaved,setWSaved]       =useState(false);
+  const [wDateOffset,setWDateOffset]=useState(0);
 
   const key=todayKey();
 
+  // ── init ──────────────────────────────────────────────────────────────────
   useEffect(()=>{
-    const s=loadStore();
-    setStore(Object.keys(s).length?s:blankStore());
+    const token=getToken();
+    if(!token){setNeedSetup(true);return;}
+    ghFetch().then(data=>{
+      setStore(data||blankStore());
+    }).catch(()=>{
+      setNeedSetup(true);
+    });
   },[]);
 
-  // sync weight input when offset changes
   const wTargetDate=fmt(addDays(new Date(),wDateOffset));
   useEffect(()=>{
+    if(!store)return;
     const w=(store.weights||{})[wTargetDate];
-    if(w)setWInput(String(w));
-    else{
-      // find most recent weight
-      const entries=Object.entries(store.weights||{}).sort(([a],[b])=>b.localeCompare(a));
-      const latest=entries.find(([d])=>d<=wTargetDate);
-      setWInput(latest?String(latest[1]):"");
-    }
-  },[wDateOffset,store.weights]);
+    if(w){setWInput(String(w));return;}
+    const entries=Object.entries(store.weights||{}).sort(([a],[b])=>b.localeCompare(a));
+    const latest=entries.find(([d])=>d<=wTargetDate);
+    setWInput(latest?String(latest[1]):"");
+  },[wDateOffset,store]);
+
+  // ── auto-sync ──────────────────────────────────────────────────────────────
+  const scheduleSync=useCallback((newStore)=>{
+    if(syncTimer.current)clearTimeout(syncTimer.current);
+    setSyncState("syncing");
+    syncTimer.current=setTimeout(async()=>{
+      try{
+        await ghSave(newStore);
+        setSyncState("saved");
+        setTimeout(()=>setSyncState("idle"),2000);
+      }catch(e){
+        setSyncState("error");
+      }
+    },1200);
+  },[]);
+
+  const updateStore=(newStore)=>{
+    setStore(newStore);
+    scheduleSync(newStore);
+  };
+
+  // ── derived ───────────────────────────────────────────────────────────────
+  if(needSetup) return <SetupScreen onDone={(data)=>{setStore(data||blankStore());setNeedSetup(false);}}/>;
+  if(!store) return(
+    <div style={{minHeight:"100vh",background:G.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
+      <Spinner/>
+      <div style={{fontSize:13,color:G.muted}}>データを読み込み中...</div>
+    </div>
+  );
 
   const tasks   =store.tasks||{};
   const weights =store.weights||{};
@@ -371,7 +444,6 @@ function App(){
     Object.fromEntries(TASKS.map(t=>[t.id,!!d[t.id]]))
   )));
 
-  // weight chart
   const weightHistory=Object.entries(weights).filter(([,v])=>v!=null)
     .sort(([a],[b])=>a.localeCompare(b)).slice(-30)
     .map(([date,v])=>({label:date.slice(5),v}));
@@ -379,7 +451,6 @@ function App(){
   const firstW =weightHistory.length?weightHistory[0].v:null;
   const wDiff  =latestW&&firstW?(latestW-firstW).toFixed(1):null;
 
-  // exercise chart (14 days)
   const exByDay={};
   exLogs.forEach(e=>{exByDay[e.date]=(exByDay[e.date]||0)+Number(e.duration||0);});
   const ex14=Array.from({length:14},(_,i)=>{
@@ -389,49 +460,51 @@ function App(){
   });
   const todayExLogs=exLogs.filter(e=>e.date===key);
 
-  // handlers
+  // ── handlers ─────────────────────────────────────────────────────────────
   const toggle=(id)=>{
     const updated={...checked,[id]:!checked[id]};
-    const ns={...store,tasks:{...tasks,[key]:updated}};
-    setStore(ns);saveStore(ns);
+    updateStore({...store,tasks:{...tasks,[key]:updated}});
   };
   const saveWeight=()=>{
     const v=parseFloat(wInput);
     if(isNaN(v)||v<30||v>300)return;
-    const ns={...store,weights:{...weights,[wTargetDate]:v}};
-    setStore(ns);saveStore(ns);
+    updateStore({...store,weights:{...weights,[wTargetDate]:v}});
     setWSaved(true);setTimeout(()=>setWSaved(false),1500);
   };
-  const rateMeal=(ratingId)=>{
-    const ns={...store,meals:{...meals,[key]:ratingId}};
-    setStore(ns);saveStore(ns);
-  };
+  const rateMeal=(ratingId)=>updateStore({...store,meals:{...meals,[key]:ratingId}});
   const saveExercise=({type,duration})=>{
     const entry={id:Date.now(),date:key,type:type.label,emoji:type.emoji,duration};
-    const ns={...store,exercises:[...exLogs,entry]};
-    setStore(ns);saveStore(ns);
+    updateStore({...store,exercises:[...exLogs,entry]});
   };
-  const deleteEx=(id)=>{
-    const ns={...store,exercises:exLogs.filter(e=>e.id!==id)};
-    setStore(ns);saveStore(ns);
-  };
+  const deleteEx=(id)=>updateStore({...store,exercises:exLogs.filter(e=>e.id!==id)});
 
   const card=(ex={})=>({background:G.card,borderRadius:14,padding:"14px",boxShadow:"0 1px 10px rgba(40,90,60,0.08)",border:`1px solid ${G.border}`,...ex});
   const TABS=[["today","今日"],["meal","食事"],["record","体重・運動"],["progress","進捗"]];
 
+  // sync status indicator
+  const syncLabel={idle:null,syncing:"同期中...",saved:"✓ 保存済み",error:"⚠ 同期エラー"}[syncState];
+  const syncColor={idle:G.muted,syncing:G.pri,saved:"#5aaa78",error:"#c05030"}[syncState];
+
   return(
     <div style={{minHeight:"100vh",background:G.bg,padding:"20px 16px 40px",maxWidth:480,margin:"0 auto",color:G.text}}>
 
-      {/* Level-up toast */}
       {lvAnim&&<div style={{position:"fixed",top:24,left:"50%",background:G.pri,color:"#fff",padding:"12px 24px",borderRadius:20,fontSize:13,fontWeight:800,zIndex:9999,boxShadow:"0 6px 24px rgba(40,130,80,0.45)",animation:"fadeUp 3s ease forwards",whiteSpace:"nowrap",pointerEvents:"none"}}>
         🎉 LEVEL UP! Lv{lvAnim.lv}「{lvAnim.title}」
       </div>}
 
       {/* Header */}
-      <div style={{marginBottom:16}}>
-        <div style={{fontSize:10,letterSpacing:3,color:G.muted,fontWeight:600,marginBottom:2}}>WEDDING DIET TRACKER</div>
-        <div style={{fontSize:20,fontWeight:800}}>理想の新郎へ 🤵</div>
-        <div style={{fontSize:11,color:G.muted,marginTop:2}}>{new Date().toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"})}</div>
+      <div style={{marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+        <div>
+          <div style={{fontSize:10,letterSpacing:3,color:G.muted,fontWeight:600,marginBottom:2}}>WEDDING DIET TRACKER</div>
+          <div style={{fontSize:20,fontWeight:800}}>理想の新郎へ 🤵</div>
+          <div style={{fontSize:11,color:G.muted,marginTop:2}}>{new Date().toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"})}</div>
+        </div>
+        {syncLabel&&(
+          <div style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:syncColor,fontWeight:600,marginTop:4}}>
+            {syncState==="syncing"&&<Spinner/>}
+            {syncLabel}
+          </div>
+        )}
       </div>
 
       {/* Level bar */}
@@ -476,16 +549,13 @@ function App(){
 
       {/* ══ TODAY ══════════════════════════════════════════════════════════════ */}
       {tab==="today"&&<>
-        {/* Ring */}
         <div style={{...card({display:"flex",alignItems:"center",gap:16,marginBottom:12})}}>
           <div style={{position:"relative",width:70,height:70,flexShrink:0}}>
             <svg width="70" height="70" viewBox="0 0 70 70">
               <circle cx="35" cy="35" r="28" fill="none" stroke={G.priLight} strokeWidth="6"/>
               <circle cx="35" cy="35" r="28" fill="none" stroke={G.pri} strokeWidth="6"
-                strokeDasharray={`${2*Math.PI*28}`}
-                strokeDashoffset={`${2*Math.PI*28*(1-todayPct/100)}`}
-                strokeLinecap="round" transform="rotate(-90 35 35)"
-                style={{transition:"stroke-dashoffset 0.5s ease"}}/>
+                strokeDasharray={`${2*Math.PI*28}`} strokeDashoffset={`${2*Math.PI*28*(1-todayPct/100)}`}
+                strokeLinecap="round" transform="rotate(-90 35 35)" style={{transition:"stroke-dashoffset 0.5s ease"}}/>
             </svg>
             <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:13,fontWeight:800,color:G.pri}}>{todayPct}%</div>
           </div>
@@ -498,20 +568,13 @@ function App(){
             {mult>1&&<div style={{marginTop:5,fontSize:10,background:G.priXLight,display:"inline-block",padding:"2px 8px",borderRadius:10,color:G.pri,fontWeight:700}}>🔥 ×{mult}倍ボーナス中</div>}
           </div>
         </div>
-
-        {/* Tasks */}
         <div style={{display:"flex",flexDirection:"column",gap:7}}>
           {TASKS.map(task=>{
             const done=!!checked[task.id];
             const bpts=Math.round(task.points*mult);
             const isBreakfast=task.id==="breakfast";
             return(
-              <button key={task.id} onClick={()=>toggle(task.id)} style={{
-                display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderRadius:12,
-                border:`1.5px solid ${done?G.pri:isBreakfast&&!done?"#e0a040":G.border}`,
-                background:done?`${G.pri}0e`:isBreakfast&&!done?"#fffbf0":G.card,
-                cursor:"pointer",textAlign:"left",transition:"all 0.18s",
-              }}>
+              <button key={task.id} onClick={()=>toggle(task.id)} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderRadius:12,border:`1.5px solid ${done?G.pri:isBreakfast&&!done?"#e0a040":G.border}`,background:done?`${G.pri}0e`:isBreakfast&&!done?"#fffbf0":G.card,cursor:"pointer",textAlign:"left",transition:"all 0.18s"}}>
                 <span style={{fontSize:20}}>{task.emoji}</span>
                 <div style={{flex:1}}>
                   <div style={{fontSize:13,fontWeight:done?700:500,color:done?G.text:G.muted}}>{task.label}</div>
@@ -521,16 +584,12 @@ function App(){
                   <div style={{fontSize:11,fontWeight:700,color:done?G.pri:isBreakfast?"#c08020":G.border}}>+{bpts}pt</div>
                   {mult>1&&<div style={{fontSize:8,color:G.priMid}}>base {task.points}</div>}
                 </div>
-                <div style={{width:20,height:20,borderRadius:"50%",background:done?G.pri:G.border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#fff",flexShrink:0,transition:"background 0.18s"}}>
-                  {done?"✓":""}
-                </div>
+                <div style={{width:20,height:20,borderRadius:"50%",background:done?G.pri:G.border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#fff",flexShrink:0,transition:"background 0.18s"}}>{done?"✓":""}</div>
               </button>
             );
           })}
         </div>
-
-        {/* Meal shortcut */}
-        <div style={{...card({marginTop:12,padding:"11px 14px",cursor:"pointer"}),display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={()=>setTab("meal")}>
+        <div style={{...card({marginTop:12,padding:"11px 14px"}),display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={()=>setTab("meal")}>
           <span style={{fontSize:22}}>{mealRating?mealRating.emoji:"🍽️"}</span>
           <div style={{flex:1}}>
             <div style={{fontSize:12,fontWeight:700,color:G.text}}>{mealRating?"食事記録: "+mealRating.label:"食事の記録をつける"}</div>
@@ -539,20 +598,14 @@ function App(){
         </div>
       </>}
 
-      {/* ══ MEAL ═══════════════════════════════════════════════════════════════ */}
+      {/* ══ MEAL ════════════════════════════════════════════════════════════════ */}
       {tab==="meal"&&<>
         <div style={{...card({marginBottom:14})}}>
           <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:4}}>🍽️ 今日の食事</div>
           <div style={{fontSize:11,color:G.muted,marginBottom:14}}>今日の食事全体を振り返って選んでください</div>
           <MealRater current={meals[key]} onRate={rateMeal}/>
-          {meals[key]&&(
-            <div style={{marginTop:12,padding:"10px 12px",background:G.priXLight,borderRadius:10,fontSize:11,color:G.pri,fontWeight:600,textAlign:"center"}}>
-              ✅ 今日の食事を記録しました
-            </div>
-          )}
+          {meals[key]&&<div style={{marginTop:12,padding:"10px 12px",background:G.priXLight,borderRadius:10,fontSize:11,color:G.pri,fontWeight:600,textAlign:"center"}}>✅ 今日の食事を記録しました</div>}
         </div>
-
-        {/* Meal history */}
         {Object.keys(meals).length>0&&(
           <div style={{...card()}}>
             <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:10}}>食事履歴（直近7日）</div>
@@ -565,9 +618,7 @@ function App(){
                 return(
                   <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
                     <span style={{fontSize:18,opacity:r?1:0.2}}>{r?r.emoji:"・"}</span>
-                    <div style={{fontSize:8,color:isToday?G.pri:G.muted,fontWeight:isToday?700:400}}>
-                      {DOW[(d.getDay()+6)%7]}
-                    </div>
+                    <div style={{fontSize:8,color:isToday?G.pri:G.muted,fontWeight:isToday?700:400}}>{DOW[(d.getDay()+6)%7]}</div>
                   </div>
                 );
               })}
@@ -576,23 +627,17 @@ function App(){
         )}
       </>}
 
-      {/* ══ RECORD (体重・運動) ══════════════════════════════════════════════════ */}
+      {/* ══ RECORD ══════════════════════════════════════════════════════════════ */}
       {tab==="record"&&<>
-        {/* Weight */}
         <div style={{...card({marginBottom:14})}}>
           <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:12}}>⚖️ 体重記録</div>
-
-          {/* Date selector */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,background:G.priXLight,borderRadius:10,padding:"8px 12px"}}>
             <button onClick={()=>setWDateOffset(wDateOffset-1)} style={{border:"none",background:"none",fontSize:18,cursor:"pointer",color:G.pri,padding:"0 4px"}}>‹</button>
             <div style={{fontSize:12,fontWeight:700,color:G.text}}>
-              {wDateOffset===0?"今日":wDateOffset===-1?"昨日":
-                addDays(new Date(),wDateOffset).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"})}
+              {wDateOffset===0?"今日":wDateOffset===-1?"昨日":addDays(new Date(),wDateOffset).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"})}
             </div>
             <button onClick={()=>setWDateOffset(Math.min(0,wDateOffset+1))} style={{border:"none",background:"none",fontSize:18,cursor:"pointer",color:wDateOffset===0?G.border:G.pri,padding:"0 4px"}} disabled={wDateOffset===0}>›</button>
           </div>
-
-          {/* Summary */}
           {latestW&&(
             <div style={{display:"flex",gap:10,marginBottom:12}}>
               <div style={{flex:1,background:G.priXLight,borderRadius:10,padding:"10px 12px",textAlign:"center"}}>
@@ -602,25 +647,19 @@ function App(){
               {wDiff!==null&&(
                 <div style={{flex:1,background:G.priXLight,borderRadius:10,padding:"10px 12px",textAlign:"center"}}>
                   <div style={{fontSize:9,color:G.muted,marginBottom:2}}>記録開始から</div>
-                  <div style={{fontSize:20,fontWeight:800,color:Number(wDiff)<=0?"#3a8a5a":"#c05030"}}>
-                    {Number(wDiff)>0?"+":""}{wDiff}<span style={{fontSize:11}}>kg</span>
-                  </div>
+                  <div style={{fontSize:20,fontWeight:800,color:Number(wDiff)<=0?"#3a8a5a":"#c05030"}}>{Number(wDiff)>0?"+":""}{wDiff}<span style={{fontSize:11}}>kg</span></div>
                 </div>
               )}
             </div>
           )}
-
           <LineChart data={weightHistory} color={G.pri} height={90}/>
           <div style={{marginTop:12}}>
             <WeightInput value={wInput} onChange={setWInput} onSave={saveWeight} saved={wSaved}/>
           </div>
         </div>
 
-        {/* Exercise */}
         <div style={{...card({marginBottom:14})}}>
           <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:12}}>💪 運動記録（今日）</div>
-
-          {/* 14-day bar */}
           <div style={{marginBottom:14}}>
             <div style={{fontSize:10,color:G.muted,marginBottom:6}}>直近14日の運動時間（分）</div>
             <div style={{display:"flex",alignItems:"flex-end",gap:4,height:56}}>
@@ -637,9 +676,7 @@ function App(){
               })}
             </div>
           </div>
-
           <ExerciseLogger onSave={saveExercise}/>
-
           {todayExLogs.length>0&&(
             <div style={{marginTop:14}}>
               <div style={{fontSize:10,color:G.muted,fontWeight:700,marginBottom:7}}>今日の記録</div>
@@ -659,7 +696,6 @@ function App(){
           )}
         </div>
 
-        {/* Exercise history */}
         {exLogs.length>0&&(
           <div style={{...card()}}>
             <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:10}}>運動履歴（直近10件）</div>
@@ -679,7 +715,6 @@ function App(){
 
       {/* ══ PROGRESS ════════════════════════════════════════════════════════════ */}
       {tab==="progress"&&<>
-        {/* Rank */}
         <div style={{...card({marginBottom:14,background:`linear-gradient(135deg,${rank.color}15,${G.card})`,borderColor:rank.color+"40"})}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
@@ -697,8 +732,6 @@ function App(){
             </div>
           </div>
         </div>
-
-        {/* Week chart */}
         <div style={{...card({marginBottom:14})}}>
           <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:10}}>今週の達成率</div>
           <div style={{display:"flex",alignItems:"flex-end",gap:6,height:62}}>
@@ -714,8 +747,6 @@ function App(){
             })}
           </div>
         </div>
-
-        {/* Missions */}
         <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:10}}>今週のミッション</div>
         <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
           {missions.map((m,i)=>{
@@ -733,8 +764,6 @@ function App(){
             );
           })}
         </div>
-
-        {/* Level roadmap */}
         <div style={{...card()}}>
           <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:10}}>全レベルロードマップ</div>
           <div style={{display:"flex",flexDirection:"column",gap:5}}>
@@ -762,14 +791,6 @@ function App(){
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
-
-<script>
-if("serviceWorker" in navigator){
-  const sw=`const C="diet-v2";self.addEventListener("install",e=>e.waitUntil(caches.open(C).then(c=>c.addAll(["/"]))));self.addEventListener("fetch",e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`;
-  const blob=new Blob([sw],{type:"application/javascript"});
-  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
-}
 </script>
 </body>
 </html>

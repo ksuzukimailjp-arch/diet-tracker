@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#3a8a5a"/>
+<title>新郎ダイエット進捗 👀</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+body{background:#f2f6f2;font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;color:#1a2e1a}
+.wrap{max-width:480px;margin:0 auto;padding:24px 16px 48px}
+.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 10px rgba(40,90,60,0.08);border:1px solid #d4e8d4;margin-bottom:12px}
+.label{font-size:10px;color:#6a8a6a;font-weight:700;letter-spacing:2px;margin-bottom:10px}
+.big{font-size:22px;font-weight:800}
+.muted{color:#6a8a6a}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:24px;height:24px;border:3px solid #c8e6c9;border-top:3px solid #3a8a5a;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="margin-bottom:20px">
+    <div style="font-size:10px;letter-spacing:3px;color:#6a8a6a;font-weight:600;margin-bottom:2px">WEDDING DIET TRACKER</div>
+    <div style="font-size:20px;font-weight:800">新郎の進捗 👀</div>
+    <div style="font-size:11px;color:#6a8a6a;margin-top:2px" id="updated">読み込み中...</div>
+  </div>
+  <div id="app"><div style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto"></div><div style="font-size:13px;color:#6a8a6a;margin-top:16px">データを読み込み中...</div></div></div>
+</div>
+
+<script>
+const GH_URL="https://raw.githubusercontent.com/ksuzukimailjp-arch/diet-tracker/main/data.json";
+
+const G={pri:"#3a8a5a",priMid:"#5aaa78",priLight:"#c8e6c9",priXLight:"#edf7ed",muted:"#6a8a6a",border:"#d4e8d4",text:"#1a2e1a"};
+
+const TASKS=[
+  {id:"breakfast",emoji:"🍳",label:"朝ごはんを食べた",    points:20},
+  {id:"water",    emoji:"💧",label:"水を1.5L飲む",        points:10},
+  {id:"vegFirst", emoji:"🥗",label:"野菜から先に食べた",  points:10},
+  {id:"noLateEat",emoji:"🌙",label:"21時以降食べなかった",points:15},
+  {id:"snack",    emoji:"🍪",label:"間食を我慢 or 半分に",points:15},
+  {id:"walk",     emoji:"🚶",label:"15〜30分歩いた",      points:20},
+  {id:"exercise", emoji:"💪",label:"筋トレをした",        points:25},
+  {id:"weigh",    emoji:"⚖️",label:"体重を記録した",      points: 5},
+];
+const BASE_TOTAL=TASKS.reduce((s,t)=>s+t.points,0);
+
+const MEAL_RATINGS=[
+  {id:5,emoji:"😇",label:"完璧",    color:"#3a8a5a"},
+  {id:4,emoji:"🙂",label:"良い",    color:"#5aaa78"},
+  {id:3,emoji:"😐",label:"普通",    color:"#c9a84c"},
+  {id:2,emoji:"😓",label:"よくない",color:"#d08040"},
+  {id:1,emoji:"🍕",label:"ダメ",    color:"#c05030"},
+];
+
+const RANKS=[
+  {name:"Bronze", min:0,  color:"#a06840",emoji:"🥉"},
+  {name:"Silver", min:40, color:"#8a9aaa",emoji:"🥈"},
+  {name:"Gold",   min:65, color:"#c9a84c",emoji:"🥇"},
+  {name:"Wedding",min:85, color:"#3a8a5a",emoji:"💍"},
+];
+const getRank=(p)=>[...RANKS].reverse().find(r=>p>=r.min)||RANKS[0];
+
+const LEVELS=[
+  {lv:1,xp:0,title:"見習い新郎"},{lv:2,xp:200,title:"意識高め新郎"},{lv:3,xp:500,title:"ダイエット戦士"},
+  {lv:4,xp:900,title:"習慣マスター"},{lv:5,xp:1400,title:"鋼の意志"},{lv:6,xp:2000,title:"体型番長"},
+  {lv:7,xp:2700,title:"スーツの申し子"},{lv:8,xp:3500,title:"伝説の花婿候補"},{lv:9,xp:4400,title:"ウェディング覇者"},
+  {lv:10,xp:5500,title:"完璧な新郎 💍"},
+];
+const getLevel=(xp)=>{
+  let cur=LEVELS[0],next=LEVELS[1];
+  for(let i=LEVELS.length-1;i>=0;i--){if(xp>=LEVELS[i].xp){cur=LEVELS[i];next=LEVELS[i+1]||null;break;}}
+  return{cur,next};
+};
+
+const toKey=(d)=>d.toISOString().slice(0,10);
+const todayKey=()=>toKey(new Date());
+const DOW=["月","火","水","木","金","土","日"];
+const getWeekDays=()=>{
+  const now=new Date(),dow=(now.getDay()+6)%7;
+  return Array.from({length:7},(_,i)=>{const d=new Date(now);d.setDate(d.getDate()-dow+i);return toKey(d);});
+};
+
+function card(inner,extra=""){
+  return `<div class="card" style="${extra}">${inner}</div>`;
+}
+function statBox(icon,val,label,color){
+  return `<div class="card" style="flex:1;padding:10px;text-align:center"><div style="font-size:18px">${icon}</div><div style="font-size:14px;font-weight:800;color:${color||G.pri};margin-top:2px">${val}</div><div style="font-size:9px;color:${G.muted};margin-top:1px">${label}</div></div>`;
+}
+
+function renderWeightChart(history){
+  if(!history||history.length<2)return`<div style="height:80px;display:flex;align-items:center;justify-content:center;color:${G.muted};font-size:11px">データ不足</div>`;
+  const vals=history.map(d=>d.v);
+  const mn=Math.min(...vals),mx=Math.max(...vals);
+  const pad=26,W=320,H=80;
+  const px=(i)=>pad+(i/(history.length-1))*(W-pad*2);
+  const py=(v)=>mx===mn?H/2:H-pad-(((v-mn)/(mx-mn))*(H-pad*2));
+  const pts=history.map((d,i)=>`${px(i)},${py(d.v)}`).join(" ");
+  const area=`M${px(0)},${py(history[0].v)} `+history.map((d,i)=>`L${px(i)},${py(d.v)}`).join(" ")+` L${px(history.length-1)},${H} L${px(0)},${H} Z`;
+  const step=Math.ceil(history.length/6);
+  return`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block">
+    <defs><linearGradient id="vg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${G.pri}" stop-opacity="0.2"/><stop offset="100%" stop-color="${G.pri}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#vg)"/>
+    <polyline points="${pts}" fill="none" stroke="${G.pri}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${history.map((d,i)=>`<circle cx="${px(i)}" cy="${py(d.v)}" r="3.5" fill="${G.pri}"/>${(i===0||i===history.length-1||i%step===0)?`<text x="${px(i)}" y="${py(d.v)-8}" text-anchor="middle" font-size="8" fill="${G.muted}">${d.v}</text><text x="${px(i)}" y="${H-1}" text-anchor="middle" font-size="7" fill="${G.muted}">${d.label}</text>`:""}`).join("")}
+  </svg>`;
+}
+
+async function load(){
+  try{
+    const res=await fetch(GH_URL+"?t="+Date.now());
+    if(!res.ok)throw new Error();
+    const data=await res.json();
+    render(data);
+    document.getElementById("updated").textContent="最終更新: "+new Date().toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
+  }catch(e){
+    document.getElementById("app").innerHTML=`<div class="card" style="text-align:center;padding:32px;color:#c05030">データの読み込みに失敗しました。<br><small>しばらく経ってからリロードしてください</small></div>`;
+  }
+}
+
+function render(data){
+  const tasks=data.tasks||{};
+  const weights=data.weights||{};
+  const meals=data.meals||{};
+  const exLogs=data.exercises||[];
+  const key=todayKey();
+  const checked=tasks[key]||{};
+
+  // streak
+  let streak=0;const now=new Date();
+  for(let i=0;;i++){const d=new Date(now);d.setDate(d.getDate()-i);const p=TASKS.filter(t=>(tasks[toKey(d)]||{})[t.id]).reduce((s,t)=>s+t.points,0);if(p>0)streak++;else break;}
+
+  // today
+  const todayBase=TASKS.filter(t=>checked[t.id]).reduce((s,t)=>s+t.points,0);
+  const todayPct=Math.round((todayBase/BASE_TOTAL)*100);
+  const doneNum=TASKS.filter(t=>checked[t.id]).length;
+  const mealRating=MEAL_RATINGS.find(r=>r.id===meals[key]);
+
+  // total xp
+  const totalXP=Object.entries(tasks).reduce((sum,[date,day])=>{
+    const mp=(MEAL_RATINGS.find(r=>r.id===(meals[date]||0))?.pts)||0;
+    return sum+TASKS.filter(t=>day[t.id]).reduce((s,t)=>s+t.points,0)+mp;
+  },0);
+  const {cur:curLv,next:nextLv}=getLevel(totalXP);
+  const xpInLevel=totalXP-curLv.xp;
+  const xpNeeded=nextLv?nextLv.xp-curLv.xp:1;
+  const lvPct=nextLv?Math.min(100,Math.round((xpInLevel/xpNeeded)*100)):100;
+
+  // week
+  const weekDays=getWeekDays();
+  const weekPcts=weekDays.map(k=>{
+    const d=tasks[k]||{};
+    return Math.round((TASKS.filter(t=>d[t.id]).reduce((s,t)=>s+t.points,0)/BASE_TOTAL)*100);
+  });
+  const weekAvg=Math.round(weekPcts.reduce((s,v)=>s+v,0)/7);
+  const rank=getRank(weekAvg);
+
+  // weight
+  const weightHistory=Object.entries(weights).filter(([,v])=>v!=null).sort(([a],[b])=>a.localeCompare(b)).slice(-30).map(([date,v])=>({label:date.slice(5),v}));
+  const latestW=weightHistory.length?weightHistory[weightHistory.length-1].v:null;
+  const firstW=weightHistory.length?weightHistory[0].v:null;
+  const wDiff=latestW&&firstW?(latestW-firstW).toFixed(1):null;
+
+  // circumference
+  const circ=2*Math.PI*28;
+  const offset=circ*(1-todayPct/100);
+
+  let html="";
+
+  // Level
+  html+=card(`
+    <div class="label">LEVEL ${curLv.lv}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,${G.priMid},${G.pri});display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff">${curLv.lv}</div>
+        <div style="font-size:14px;font-weight:800">${curLv.title}</div>
+      </div>
+      <div style="font-size:12px;color:${G.pri};font-weight:700">${totalXP.toLocaleString()} XP</div>
+    </div>
+    <div style="background:${G.priXLight};border-radius:6px;height:7px;overflow:hidden">
+      <div style="height:100%;width:${lvPct}%;background:linear-gradient(90deg,${G.priMid},${G.pri});border-radius:6px"></div>
+    </div>
+    ${nextLv?`<div style="font-size:9px;color:${G.muted};margin-top:3px;text-align:right">Lv${nextLv.lv}まで ${nextLv.xp-totalXP} XP</div>`:""}
+  `);
+
+  // Stats
+  html+=`<div style="display:flex;gap:7px;margin-bottom:12px">
+    ${statBox("🔥",`${streak}日`,"継続中")}
+    ${statBox(rank.emoji,rank.name,"今週ランク",rank.color)}
+    ${latestW?statBox("⚖️",`${latestW}kg`,"最新体重"):""}
+  </div>`;
+
+  // Today ring
+  html+=card(`
+    <div class="label">TODAY ${new Date().toLocaleDateString("ja-JP",{month:"numeric",day:"numeric",weekday:"short"})}</div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div style="position:relative;width:70px;height:70px;flex-shrink:0">
+        <svg width="70" height="70" viewBox="0 0 70 70">
+          <circle cx="35" cy="35" r="28" fill="none" stroke="${G.priLight}" stroke-width="6"/>
+          <circle cx="35" cy="35" r="28" fill="none" stroke="${G.pri}" stroke-width="6"
+            stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
+            stroke-linecap="round" transform="rotate(-90 35 35)"/>
+        </svg>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;font-weight:800;color:${G.pri}">${todayPct}%</div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:800;margin-bottom:3px">${todayPct===100?"完璧！満点達成🎉":todayPct>=80?"あと少し！":todayPct>=50?"いい感じ！":"まだこれから💪"}</div>
+        <div style="font-size:11px;color:${G.muted}">${doneNum}/${TASKS.length} タスク完了</div>
+        ${mealRating?`<div style="margin-top:4px;font-size:11px;color:${mealRating.color};font-weight:600">${mealRating.emoji} 食事: ${mealRating.label}</div>`:""}
+      </div>
+    </div>
+  `);
+
+  // Today tasks
+  html+=card(`
+    <div class="label">今日のタスク</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${TASKS.map(t=>{
+        const done=!!checked[t.id];
+        return`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:${done?G.priXLight:"#f8faf8"};opacity:${done?1:0.5}">
+          <span style="font-size:17px">${t.emoji}</span>
+          <span style="flex:1;font-size:12px;font-weight:${done?700:400};color:${done?G.text:G.muted}">${t.label}</span>
+          <span style="font-size:14px">${done?"✅":"⬜"}</span>
+        </div>`;
+      }).join("")}
+    </div>
+  `);
+
+  // Week chart
+  html+=card(`
+    <div class="label">今週の達成率（週平均 ${weekAvg}%）</div>
+    <div style="display:flex;align-items:flex-end;gap:6px;height:62px">
+      ${weekDays.map((k,i)=>{
+        const isToday=k===key,isPast=k<key;
+        return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+          <div style="font-size:8px;color:${weekPcts[i]>0?G.pri:G.muted};font-weight:600">${weekPcts[i]>0?weekPcts[i]+"%":""}</div>
+          <div style="width:100%;height:${Math.max(3,weekPcts[i]*0.52)}px;background:${isToday?G.pri:weekPcts[i]>0?G.priLight:G.border};border-radius:4px;opacity:${!isPast&&!isToday?0.3:1}"></div>
+          <div style="font-size:9px;color:${isToday?G.pri:G.muted};font-weight:${isToday?700:400}">${DOW[(new Date(k).getDay()+6)%7]}</div>
+        </div>`;
+      }).join("")}
+    </div>
+  `);
+
+  // Meal history
+  html+=card(`
+    <div class="label">食事記録（直近7日）</div>
+    <div style="display:flex;gap:6px;justify-content:space-between">
+      ${Array.from({length:7},(_,i)=>{
+        const d=new Date();d.setDate(d.getDate()-(6-i));
+        const k=toKey(d);
+        const r=MEAL_RATINGS.find(x=>x.id===meals[k]);
+        const isToday=k===key;
+        return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+          <span style="font-size:18px;opacity:${r?1:0.2}">${r?r.emoji:"・"}</span>
+          <div style="font-size:8px;color:${isToday?G.pri:G.muted};font-weight:${isToday?700:400}">${DOW[(d.getDay()+6)%7]}</div>
+        </div>`;
+      }).join("")}
+    </div>
+  `);
+
+  // Weight chart
+  if(weightHistory.length>0){
+    html+=card(`
+      <div class="label">体重推移</div>
+      ${latestW?`<div style="display:flex;gap:10px;margin-bottom:10px">
+        <div style="flex:1;background:${G.priXLight};border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:${G.muted};margin-bottom:2px">最新</div>
+          <div style="font-size:20px;font-weight:800;color:${G.pri}">${latestW}<span style="font-size:11px">kg</span></div>
+        </div>
+        ${wDiff!==null?`<div style="flex:1;background:${G.priXLight};border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:${G.muted};margin-bottom:2px">記録開始から</div>
+          <div style="font-size:20px;font-weight:800;color:${Number(wDiff)<=0?"#3a8a5a":"#c05030"}">${Number(wDiff)>0?"+":""}${wDiff}<span style="font-size:11px">kg</span></div>
+        </div>`:""}
+      </div>`:""}
+      ${renderWeightChart(weightHistory)}
+    `);
+  }
+
+  // Exercise recent
+  if(exLogs.length>0){
+    html+=card(`
+      <div class="label">運動履歴（直近7件）</div>
+      <div style="display:flex;flex-direction:column">
+        ${[...exLogs].reverse().slice(0,7).map((e,i,arr)=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:${i<arr.length-1?`1px solid ${G.border}`:"none"}">
+            <div style="font-size:9px;color:${G.muted};flex-shrink:0;width:38px">${e.date.slice(5)}</div>
+            <span style="font-size:14px">${e.emoji}</span>
+            <div style="flex:1;font-size:12px;color:${G.text}">${e.type}</div>
+            <div style="font-size:11px;font-weight:700;color:${G.pri};flex-shrink:0">${e.duration}分</div>
+          </div>`).join("")}
+      </div>
+    `);
+  }
+
+  html+=`<div style="text-align:center;margin-top:16px;font-size:11px;color:${G.muted}">応援してるよ！頑張れ🌿</div>`;
+  document.getElementById("app").innerHTML=html;
+}
+
+load();
+setInterval(load,60000); // 1分ごとに自動更新
+</script>
+</body>
+</html>
