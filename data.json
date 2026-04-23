@@ -1,12 +1,5 @@
 {
-  "tasks": {
-    "2026-04-23": {
-      "breakfast": true,
-      "walk": true,
-      "vegFirst": true,
-      "snack": true
-    }
-  },
+  "tasks": {},
   "weights": {},
   "meals": {},
   "exercises": []
