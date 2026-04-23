@@ -1,7 +1,8 @@
 {
   "tasks": {
     "2026-04-23": {
-      "breakfast": true
+      "breakfast": true,
+      "walk": true
     }
   },
   "weights": {},
