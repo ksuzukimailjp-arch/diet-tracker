@@ -3,7 +3,8 @@
     "2026-04-23": {
       "breakfast": true,
       "walk": true,
-      "vegFirst": true
+      "vegFirst": true,
+      "snack": true
     }
   },
   "weights": {},
