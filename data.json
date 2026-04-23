@@ -1,5 +1,9 @@
 {
-  "tasks": {},
+  "tasks": {
+    "2026-04-23": {
+      "breakfast": true
+    }
+  },
   "weights": {},
   "meals": {},
   "exercises": []
