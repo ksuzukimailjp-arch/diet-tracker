@@ -324,7 +324,7 @@ function App(){
 
   const tasks=store.tasks||{},weights=store.weights||{},meals=store.meals||{},exLogs=store.exercises||[],checked=tasks[key]||{};
 
-  const streak=(()=>{let c=0;const now=new Date();for(let i=0;;i++){const d=new Date(now);d.setDate(d.getDate()-i);const p=TASKS.filter(t=>(tasks[toKey(d)]||{})[t.id]).reduce((s,t)=>s+t.points,0);if(p>0)c++;else break;}return c;})();
+  const streak=(()=>{let c=0;const now=nowJ();for(let i=0;;i++){const d=new Date(now);d.setDate(d.getDate()-i);const p=TASKS.filter(t=>(tasks[toKey(d)]||{})[t.id]).reduce((s,t)=>s+t.points,0);if(p>0)c++;else break;}return c;})();
   const mult=sMult(streak);
   const todayBase=TASKS.filter(t=>checked[t.id]).reduce((s,t)=>s+t.points,0);
   const mealR=MEAL_RATINGS.find(r=>r.id===meals[key]);
@@ -436,7 +436,7 @@ function App(){
   },[filteredExLogs,weights]);
 
   const exByDay2={};exLogs.forEach(e=>{exByDay2[e.date]=(exByDay2[e.date]||0)+Number(e.duration||0);});
-  const ex14=Array.from({length:14},(_,i)=>{const base=new Date(Date.now()-4*60*60*1000);base.setDate(base.getDate()-(13-i));const k=base.toISOString().slice(0,10);return{label:DOW[(base.getDay()+6)%7],v:exByDay2[k]||0,key:k};});
+  const ex14=Array.from({length:14},(_,i)=>{const base=nowJ();base.setDate(base.getDate()-(13-i));const k=base.toISOString().slice(0,10);return{label:DOW[(base.getDay()+6)%7],v:exByDay2[k]||0,key:k};});
   const todayEx=exLogs.filter(e=>e.date===key);
 
   // handlers
@@ -515,8 +515,8 @@ function App(){
       <div>
         <div style={{fontSize:10,letterSpacing:3,color:G.muted,fontWeight:600,marginBottom:2}}>DIET TRACKER</div>
         <div style={{fontSize:20,fontWeight:800}}>理想の{displayName}へ 🌿</div>
-        <div style={{fontSize:11,color:G.muted,marginTop:2}}>{new Date().toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"})}
-          {settings.goalDate&&<span style={{marginLeft:8,color:G.pri,fontWeight:600}}>目標日まで{diffDays(new Date(),new Date(settings.goalDate))}日</span>}
+        <div style={{fontSize:11,color:G.muted,marginTop:2}}>{nowJ().toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"})}
+          {settings.goalDate&&<span style={{marginLeft:8,color:G.pri,fontWeight:600}}>目標日まで{diffDays(nowJ(),new Date(settings.goalDate))}日</span>}
         </div>
       </div>
       <button onClick={()=>{const s=LS.getSettings();setSName(s.name||"");setSGoalDate(s.goalDate||"");setSGoalWeight(s.goalWeight||"");setShowSettings(true);}} style={{border:"none",background:"none",fontSize:22,cursor:"pointer",color:G.muted,padding:"4px"}}>⚙️</button>
@@ -608,7 +608,7 @@ function App(){
         <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:12}}>⚖️ 体重記録</div>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,background:G.priXLight,borderRadius:10,padding:"8px 12px"}}>
           <button onClick={()=>setWOffset(wOffset-1)} style={{border:"none",background:"none",fontSize:18,cursor:"pointer",color:G.pri,padding:"0 4px"}}>‹</button>
-          <div style={{fontSize:12,fontWeight:700,color:G.text}}>{wOffset===0?"今日":wOffset===-1?"昨日":addDays(new Date(),wOffset).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"})}</div>
+          <div style={{fontSize:12,fontWeight:700,color:G.text}}>{wOffset===0?"今日":wOffset===-1?"昨日":addDays(nowJ(),wOffset).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"})}</div>
           <button onClick={()=>setWOffset(Math.min(0,wOffset+1))} style={{border:"none",background:"none",fontSize:18,cursor:"pointer",color:wOffset===0?G.border:G.pri,padding:"0 4px"}} disabled={wOffset===0}>›</button>
         </div>
         {latestW&&<div style={{display:"flex",gap:10,marginBottom:12}}>
