@@ -6,5 +6,13 @@
   },
   "weights": {},
   "meals": {},
-  "exercises": []
+  "exercises": [
+    {
+      "id": 1777000490117,
+      "date": "2026-04-24",
+      "type": "ウォーキング",
+      "emoji": "🚶",
+      "duration": 10
+    }
+  ]
 }
