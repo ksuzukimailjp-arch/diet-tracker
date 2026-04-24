@@ -4,7 +4,8 @@
       "breakfast": true
     },
     "2026-04-24": {
-      "water": true
+      "water": true,
+      "breakfast": true
     }
   },
   "weights": {},
