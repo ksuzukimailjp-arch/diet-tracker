@@ -10,7 +10,7 @@
 body{background:#f2f6f2;font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;-webkit-font-smoothing:antialiased;color:#1a2e1a}
 .wrap{max-width:480px;margin:0 auto;padding:24px 16px 48px}
 .card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 10px rgba(40,90,60,0.08);border:1px solid #d4e8d4;margin-bottom:14px}
-.label{font-size:10px;color:#6a8a6a;font-weight:700;letter-spacing:2px;margin-bottom:8px}
+.label{font-size:10px;color:#6a8a6a;font-weight:700;letter-spacing:2px;margin-bottom:10px}
 .loading{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#6a8a6a;font-size:13px}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .spin{animation:spin 1s linear infinite;display:inline-block;font-size:32px}
@@ -18,7 +18,6 @@ body{background:#f2f6f2;font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',s
 </head>
 <body>
 <div id="app"><div class="loading"><div class="spin">🌿</div><div>読み込み中...</div></div></div>
-
 <script>
 const OWNER="ksuzukimailjp-arch",REPO="diet-tracker",PATH="data.json";
 const G={pri:"#3a8a5a",priMid:"#5aaa78",priLight:"#c8e6c9",priXLight:"#edf7ed",muted:"#6a8a6a",border:"#d4e8d4",text:"#1a2e1a"};
@@ -36,9 +35,11 @@ const TASKS=[
 const BASE=TASKS.reduce((s,t)=>s+t.points,0);
 
 const MEAL_RATINGS=[
-  {id:5,emoji:"😇",label:"完璧",color:"#3a8a5a"},{id:4,emoji:"🙂",label:"良い",color:"#5aaa78"},
-  {id:3,emoji:"😐",label:"普通",color:"#c9a84c"},{id:2,emoji:"😓",label:"よくない",color:"#d08040"},
-  {id:1,emoji:"🍕",label:"ダメ",color:"#c05030"},
+  {id:5,emoji:"😇",label:"完璧",color:"#3a8a5a",pts:20},
+  {id:4,emoji:"🙂",label:"良い",color:"#5aaa78",pts:15},
+  {id:3,emoji:"😐",label:"普通",color:"#c9a84c",pts:8},
+  {id:2,emoji:"😓",label:"よくない",color:"#d08040",pts:3},
+  {id:1,emoji:"🍕",label:"ダメ",color:"#c05030",pts:0},
 ];
 const MEAL_PTS={5:20,4:15,3:8,2:3,1:0};
 
@@ -50,38 +51,44 @@ const LEVELS=[
   {lv:9,xp:4400,title:"ウェディング覇者"},{lv:10,xp:5500,title:"完璧な新郎 💍"},
 ];
 const RANKS=[
-  {name:"Bronze",min:0,color:"#a06840",emoji:"🥉"},{name:"Silver",min:40,color:"#8a9aaa",emoji:"🥈"},
-  {name:"Gold",min:65,color:"#c9a84c",emoji:"🥇"},{name:"Wedding",min:85,color:"#3a8a5a",emoji:"💍"},
+  {name:"Bronze",min:0,color:"#a06840",emoji:"🥉"},
+  {name:"Silver",min:40,color:"#8a9aaa",emoji:"🥈"},
+  {name:"Gold",min:65,color:"#c9a84c",emoji:"🥇"},
+  {name:"Wedding",min:85,color:"#3a8a5a",emoji:"💍"},
 ];
 const DOW=["月","火","水","木","金","土","日"];
 
 const toKey=(d)=>d.toISOString().slice(0,10);
 const todayKey=()=>toKey(new Date());
-const getWeekDays=()=>{const now=new Date(),dow=(now.getDay()+6)%7;return Array.from({length:7},(_,i)=>{const d=new Date(now);d.setDate(d.getDate()-dow+i);return toKey(d);});};
+const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
+const getWeekStart=(offset=0)=>{const now=new Date();const dow=(now.getDay()+6)%7;const mon=addDays(now,-dow);return addDays(mon,offset*7);};
+const getWeekDaysFrom=(start)=>Array.from({length:7},(_,i)=>toKey(addDays(start,i)));
 const getLevel=(xp)=>{let cur=LEVELS[0],next=LEVELS[1];for(let i=LEVELS.length-1;i>=0;i--){if(xp>=LEVELS[i].xp){cur=LEVELS[i];next=LEVELS[i+1]||null;break;}}return{cur,next};};
 const getRank=(p)=>[...RANKS].reverse().find(r=>p>=r.min)||RANKS[0];
 
-function mkSVGLine(data,color,H){
+// ── SVG helpers ───────────────────────────────────────────────────────────────
+function mkLine(data,color,H){
   if(!data||data.length<2)return`<div style="height:${H}px;display:flex;align-items:center;justify-content:center;color:${G.muted};font-size:11px">2件以上記録するとグラフが表示されます</div>`;
-  const vals=data.map(d=>d.v),mn=Math.min(...vals),mx=Math.max(...vals),pad=26,W=320;
+  const vals=data.map(d=>d.v),mn=Math.min(...vals),mx=Math.max(...vals),pad=28,W=320;
   const px=(i)=>pad+(i/(data.length-1))*(W-pad*2);
   const py=(v)=>mx===mn?H/2:H-pad-(((v-mn)/(mx-mn))*(H-pad*2));
   const pts=data.map((d,i)=>`${px(i)},${py(d.v)}`).join(" ");
   const area=`M${px(0)},${py(data[0].v)} `+data.map((d,i)=>`L${px(i)},${py(d.v)}`).join(" ")+` L${px(data.length-1)},${H} L${px(0)},${H} Z`;
   const step=Math.ceil(data.length/6);
-  const circles=data.map((d,i)=>{
+  const dots=data.map((d,i)=>{
     const show=i===0||i===data.length-1||i%step===0;
-    return`<circle cx="${px(i)}" cy="${py(d.v)}" r="3.5" fill="${color}"/>${show?`<text x="${px(i)}" y="${py(d.v)-8}" text-anchor="middle" font-size="8" fill="${G.muted}">${d.v}</text><text x="${px(i)}" y="${H-1}" text-anchor="middle" font-size="7" fill="${G.muted}">${d.label}</text>`:""}`;
+    return`<circle cx="${px(i)}" cy="${py(d.v)}" r="3.5" fill="${color}"/>`
+      +(show?`<text x="${px(i)}" y="${py(d.v)-8}" text-anchor="middle" font-size="8" fill="${G.muted}">${d.v}</text><text x="${px(i)}" y="${H-1}" text-anchor="middle" font-size="7" fill="${G.muted}">${d.label}</text>`:"");
   }).join("");
-  return`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block"><defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.2"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#ag)"/><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${circles}</svg>`;
+  return`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block">
+    <defs><linearGradient id="lg${H}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.2"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#lg${H})"/>
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+  </svg>`;
 }
 
-async function load(){
-  const res=await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${PATH}?t=${Date.now()}`);
-  if(!res.ok)throw new Error(res.status);
-  return res.json();
-}
-
+// ── RENDER ────────────────────────────────────────────────────────────────────
 function render(data){
   const tasks=data.tasks||{},weights=data.weights||{},meals=data.meals||{},exLogs=data.exercises||[];
   const key=todayKey(),checked=tasks[key]||{};
@@ -96,19 +103,97 @@ function render(data){
   const mealR=MEAL_RATINGS.find(r=>r.id===meals[key]);
   const doneNum=TASKS.filter(t=>checked[t.id]).length;
 
-  // XP
+  // XP & level
   const totalXP=Object.entries(tasks).reduce((sum,[date,day])=>{
-    const mp=MEAL_PTS[meals[date]]||0;
-    return sum+TASKS.filter(t=>day[t.id]).reduce((s,t)=>s+t.points,0)+mp;
+    return sum+TASKS.filter(t=>day[t.id]).reduce((s,t)=>s+t.points,0)+(MEAL_PTS[meals[date]]||0);
   },0);
   const {cur:curLv,next:nextLv}=getLevel(totalXP);
   const lvPct=nextLv?Math.min(100,Math.round(((totalXP-curLv.xp)/(nextLv.xp-curLv.xp))*100)):100;
 
-  // week
-  const weekDays=getWeekDays();
+  // this week
+  const weekDays=getWeekDaysFrom(getWeekStart(0));
   const weekPcts=weekDays.map(k=>{const d=tasks[k]||{};return Math.round((TASKS.filter(t=>d[t.id]).reduce((s,t)=>s+t.points,0)/BASE)*100);});
   const weekAvg=Math.round(weekPcts.reduce((s,v)=>s+v,0)/7);
   const rank=getRank(weekAvg);
+
+  // ── ② 食事スコアグラフ（直近14日）────────────────────────────────────────
+  const meal14=Array.from({length:14},(_,i)=>{
+    const d=new Date();d.setDate(d.getDate()-(13-i));
+    const k=toKey(d);
+    const r=MEAL_RATINGS.find(x=>x.id===meals[k]);
+    return{label:DOW[(d.getDay()+6)%7],score:r?r.pts:null,emoji:r?r.emoji:null,color:r?r.color:G.border,isToday:k===key};
+  });
+  const mealBars=meal14.map((d,i)=>{
+    const h=d.score!==null?Math.max(4,(d.score/20)*52):4;
+    return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+      ${d.emoji?`<div style="font-size:9px">${d.emoji}</div>`:`<div style="height:14px"></div>`}
+      <div style="width:100%;height:${h}px;background:${d.score!==null?d.color:G.border};border-radius:4px;opacity:${d.score!==null?1:0.25};transition:height 0.3s"></div>
+      ${(i===0||i===6||i===13||d.isToday)?`<div style="font-size:7px;color:${d.isToday?G.pri:G.muted};font-weight:${d.isToday?700:400}">${d.label}</div>`:`<div style="height:10px"></div>`}
+    </div>`;
+  }).join("");
+
+  const mealScores=Object.values(meals).filter(v=>v).map(v=>MEAL_PTS[v]||0);
+  const mealAvg=mealScores.length?Math.round(mealScores.reduce((s,v)=>s+v,0)/mealScores.length):0;
+  const bestMeal=mealScores.length?Math.max(...mealScores):0;
+  const perfectDays=Object.values(meals).filter(v=>v===5).length;
+
+  // ── ② 運動種目別内訳 ──────────────────────────────────────────────────────
+  const exByType={};
+  exLogs.forEach(e=>{
+    const k=e.type||"その他";
+    exByType[k]=(exByType[k]||0)+Number(e.duration||0);
+  });
+  const exByDay={};exLogs.forEach(e=>{exByDay[e.date]=(exByDay[e.date]||0)+Number(e.duration||0);});
+  const totalExDays=Object.keys(exByDay).length;
+  const totalExMin=Object.values(exByDay).reduce((s,v)=>s+v,0);
+  const exTypes=Object.entries(exByType).sort(([,a],[,b])=>b-a);
+  const maxExMin=exTypes.length?exTypes[0][1]:1;
+
+  const exTypeBars=exTypes.map(([type,min])=>{
+    const ex=exLogs.find(e=>e.type===type);
+    const emoji=ex?ex.emoji:"⚡";
+    const pct=Math.round((min/maxExMin)*100);
+    return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-size:16px;width:24px;text-align:center;flex-shrink:0">${emoji}</span>
+      <div style="font-size:11px;width:72px;flex-shrink:0;color:${G.text}">${type}</div>
+      <div style="flex:1;background:${G.priXLight};border-radius:4px;height:14px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${G.pri};border-radius:4px"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:${G.pri};width:36px;text-align:right;flex-shrink:0">${min}分</div>
+    </div>`;
+  }).join("");
+
+  // ── ② 週ごとの達成率推移（過去4週）──────────────────────────────────────
+  const week4=Array.from({length:4},(_,i)=>{
+    const start=getWeekStart(-(3-i));
+    const days=getWeekDaysFrom(start);
+    const pcts=days.map(k=>{const d=tasks[k]||{};return Math.round((TASKS.filter(t=>d[t.id]).reduce((s,t)=>s+t.points,0)/BASE)*100);});
+    const avg=Math.round(pcts.reduce((s,v)=>s+v,0)/7);
+    const isCurrent=i===3;
+    const label=i===3?"今週":i===2?"先週":i===1?"2週前":"3週前";
+    return{avg,label,isCurrent,rank:getRank(avg)};
+  });
+  const maxW4=Math.max(...week4.map(w=>w.avg),1);
+
+  const week4Bars=week4.map(w=>`
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px">
+      <div style="font-size:10px;font-weight:700;color:${w.isCurrent?G.pri:G.muted}">${w.avg}%</div>
+      <div style="width:100%;height:${Math.max(4,(w.avg/maxW4)*80)}px;background:${w.isCurrent?G.pri:G.priLight};border-radius:6px;transition:height 0.4s"></div>
+      <div style="font-size:10px;color:${w.isCurrent?G.pri:G.muted};font-weight:${w.isCurrent?700:400}">${w.label}</div>
+      <div style="font-size:9px">${w.rank.emoji}</div>
+    </div>`).join("");
+
+  // week bar for today section
+  const weekBars=weekDays.map((k,i)=>{
+    const isT=k===key,isP=k<key,pct=weekPcts[i];
+    const mR=MEAL_RATINGS.find(r=>r.id===meals[k]);
+    return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="font-size:8px;color:${pct>0?G.pri:G.muted};font-weight:600">${pct>0?pct+"%":""}</div>
+      <div style="width:100%;height:${Math.max(3,pct*0.52)}px;background:${isT?G.pri:pct>0?G.priLight:G.border};border-radius:4px;opacity:${!isP&&!isT?0.3:1}"></div>
+      ${mR?`<div style="font-size:11px">${mR.emoji}</div>`:`<div style="font-size:11px;opacity:0.15">・</div>`}
+      <div style="font-size:9px;color:${isT?G.pri:G.muted};font-weight:${isT?700:400}">${DOW[i]}</div>
+    </div>`;
+  }).join("");
 
   // weight chart
   const wHist=Object.entries(weights).filter(([,v])=>v!=null).sort(([a],[b])=>a.localeCompare(b)).slice(-30).map(([date,v])=>({label:date.slice(5),v}));
@@ -116,30 +201,13 @@ function render(data){
   const firstW=wHist.length?wHist[0].v:null;
   const wDiff=latestW&&firstW?(latestW-firstW).toFixed(1):null;
 
-  // exercise summary
-  const exByDay={};exLogs.forEach(e=>{exByDay[e.date]=(exByDay[e.date]||0)+Number(e.duration||0);});
-  const totalExDays=Object.keys(exByDay).length;
-  const totalExMin=Object.values(exByDay).reduce((s,v)=>s+v,0);
-
-  // week bars HTML
-  const weekBars=weekDays.map((k,i)=>{
-    const isT=k===key,isP=k<key,pct=weekPcts[i];
-    const mR=MEAL_RATINGS.find(r=>r.id===meals[k]);
-    return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
-      <div style="font-size:8px;color:${pct>0?G.pri:G.muted};font-weight:600">${pct>0?pct+"%":""}</div>
-      <div style="width:100%;height:${Math.max(3,pct*0.52)}px;background:${isT?G.pri:pct>0?G.priLight:G.border};border-radius:4px;opacity:${!isP&&!isT?0.3:1}"></div>
-      ${mR?`<div style="font-size:12px">${mR.emoji}</div>`:`<div style="font-size:12px;opacity:0.2">・</div>`}
-      <div style="font-size:9px;color:${isT?G.pri:G.muted};font-weight:${isT?700:400}">${DOW[i]}</div>
-    </div>`;
-  }).join("");
-
   // today tasks
   const taskItems=TASKS.map(t=>{
     const done=!!checked[t.id];
-    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:${done?G.priXLight:"#f8faf8"};margin-bottom:6px">
-      <span style="font-size:18px">${t.emoji}</span>
+    return`<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:9px;background:${done?G.priXLight:"#f8faf8"};margin-bottom:5px">
+      <span style="font-size:17px">${t.emoji}</span>
       <span style="flex:1;font-size:12px;font-weight:${done?700:400};color:${done?G.text:G.muted}">${t.label}</span>
-      <span style="font-size:16px">${done?"✅":"⬜"}</span>
+      <span style="font-size:15px">${done?"✅":"⬜"}</span>
     </div>`;
   }).join("");
 
@@ -147,6 +215,8 @@ function render(data){
 
   document.getElementById("app").innerHTML=`
   <div class="wrap">
+
+    <!-- Header -->
     <div style="margin-bottom:20px">
       <div style="font-size:10px;letter-spacing:3px;color:${G.muted};font-weight:600;margin-bottom:4px">WEDDING DIET TRACKER</div>
       <div style="font-size:22px;font-weight:800">進捗ページ 📊</div>
@@ -169,20 +239,20 @@ function render(data){
       ${nextLv?`<div style="font-size:9px;color:${G.muted};margin-top:4px;text-align:right">Lv${nextLv.lv}まで ${nextLv.xp-totalXP} XP</div>`:""}
     </div>
 
-    <!-- Stats -->
+    <!-- Stats row -->
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <div class="card" style="flex:1;margin-bottom:0;padding:12px 10px;text-align:center">
-        <div style="font-size:24px">🔥</div>
+        <div style="font-size:22px">🔥</div>
         <div style="font-size:18px;font-weight:800;color:${G.pri}">${streak}日</div>
         <div style="font-size:9px;color:${G.muted}">継続中</div>
       </div>
       <div class="card" style="flex:1;margin-bottom:0;padding:12px 10px;text-align:center">
-        <div style="font-size:24px">${rank.emoji}</div>
+        <div style="font-size:22px">${rank.emoji}</div>
         <div style="font-size:18px;font-weight:800;color:${rank.color}">${rank.name}</div>
         <div style="font-size:9px;color:${G.muted}">今週ランク</div>
       </div>
       <div class="card" style="flex:1;margin-bottom:0;padding:12px 10px;text-align:center">
-        <div style="font-size:24px">💪</div>
+        <div style="font-size:22px">💪</div>
         <div style="font-size:18px;font-weight:800;color:${G.pri}">${totalExDays}日</div>
         <div style="font-size:9px;color:${G.muted}">運動記録日数</div>
       </div>
@@ -192,12 +262,12 @@ function render(data){
     <div class="card">
       <div class="label">TODAY — ${new Date().toLocaleDateString("ja-JP",{month:"numeric",day:"numeric",weekday:"short"})}</div>
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
-        <div style="position:relative;width:72px;height:72px;flex-shrink:0">
-          <svg width="72" height="72" viewBox="0 0 72 72">
-            <circle cx="36" cy="36" r="29" fill="none" stroke="${G.priLight}" stroke-width="6"/>
-            <circle cx="36" cy="36" r="29" fill="none" stroke="${G.pri}" stroke-width="6"
-              stroke-dasharray="${2*Math.PI*29}" stroke-dashoffset="${2*Math.PI*29*(1-todayPct/100)}"
-              stroke-linecap="round" transform="rotate(-90 36 36)"/>
+        <div style="position:relative;width:70px;height:70px;flex-shrink:0">
+          <svg width="70" height="70" viewBox="0 0 70 70">
+            <circle cx="35" cy="35" r="28" fill="none" stroke="${G.priLight}" stroke-width="6"/>
+            <circle cx="35" cy="35" r="28" fill="none" stroke="${G.pri}" stroke-width="6"
+              stroke-dasharray="${2*Math.PI*28}" stroke-dashoffset="${2*Math.PI*28*(1-todayPct/100)}"
+              stroke-linecap="round" transform="rotate(-90 35 35)"/>
           </svg>
           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;font-weight:800;color:${G.pri}">${todayPct}%</div>
         </div>
@@ -210,15 +280,52 @@ function render(data){
       ${taskItems}
     </div>
 
-    <!-- Week -->
+    <!-- 今週の達成率 -->
     <div class="card">
       <div class="label">今週の達成率 — 週平均 ${weekAvg}%</div>
-      <div style="display:flex;align-items:flex-end;gap:6px;height:80px;margin-bottom:4px">
+      <div style="display:flex;align-items:flex-end;gap:5px;height:84px;margin-bottom:4px">
         ${weekBars}
       </div>
     </div>
 
-    <!-- Weight -->
+    <!-- ② 週ごとの達成率推移（過去4週） -->
+    <div class="card">
+      <div class="label">週間達成率の推移（過去4週）</div>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:110px;margin-bottom:6px">
+        ${week4Bars}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        ${week4.map(w=>`
+          <div style="flex:1;text-align:center;padding:6px 4px;background:${w.isCurrent?G.priXLight:"#f8faf8"};border-radius:8px;border:1px solid ${w.isCurrent?G.priLight:G.border}">
+            <div style="font-size:9px;color:${G.muted}">${w.label}</div>
+            <div style="font-size:11px;font-weight:800;color:${w.rank.color};margin-top:1px">${w.rank.name}</div>
+          </div>`).join("")}
+      </div>
+    </div>
+
+    <!-- ② 食事スコアグラフ（直近14日） -->
+    <div class="card">
+      <div class="label">食事スコアの推移（直近14日）</div>
+      <div style="display:flex;gap:4px;align-items:flex-end;height:80px;margin-bottom:8px">
+        ${mealBars}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <div style="flex:1;background:${G.priXLight};border-radius:10px;padding:9px 10px;text-align:center">
+          <div style="font-size:9px;color:${G.muted};margin-bottom:2px">平均スコア</div>
+          <div style="font-size:17px;font-weight:800;color:${G.pri}">${mealAvg}<span style="font-size:10px">pt</span></div>
+        </div>
+        <div style="flex:1;background:${G.priXLight};border-radius:10px;padding:9px 10px;text-align:center">
+          <div style="font-size:9px;color:${G.muted};margin-bottom:2px">😇 完璧の日</div>
+          <div style="font-size:17px;font-weight:800;color:${G.pri}">${perfectDays}<span style="font-size:10px">日</span></div>
+        </div>
+        <div style="flex:1;background:${G.priXLight};border-radius:10px;padding:9px 10px;text-align:center">
+          <div style="font-size:9px;color:${G.muted};margin-bottom:2px">記録日数</div>
+          <div style="font-size:17px;font-weight:800;color:${G.pri}">${mealScores.length}<span style="font-size:10px">日</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 体重推移 -->
     <div class="card">
       <div class="label">⚖️ 体重推移</div>
       ${latestW?`<div style="display:flex;gap:10px;margin-bottom:12px">
@@ -231,13 +338,13 @@ function render(data){
           <div style="font-size:20px;font-weight:800;color:${Number(wDiff)<=0?"#3a8a5a":"#c05030"}">${Number(wDiff)>0?"+":""}${wDiff}<span style="font-size:11px">kg</span></div>
         </div>`:""}
       </div>`:""}
-      ${mkSVGLine(wHist,G.pri,90)}
+      ${mkLine(wHist,G.pri,90)}
     </div>
 
-    <!-- Exercise -->
+    <!-- ② 運動種目別内訳 -->
     <div class="card">
       <div class="label">💪 運動サマリー</div>
-      <div style="display:flex;gap:10px;margin-bottom:12px">
+      <div style="display:flex;gap:10px;margin-bottom:14px">
         <div style="flex:1;background:${G.priXLight};border-radius:10px;padding:10px 12px;text-align:center">
           <div style="font-size:9px;color:${G.muted};margin-bottom:2px">総運動日数</div>
           <div style="font-size:20px;font-weight:800;color:${G.pri}">${totalExDays}<span style="font-size:11px">日</span></div>
@@ -247,18 +354,20 @@ function render(data){
           <div style="font-size:20px;font-weight:800;color:${G.pri}">${totalExMin}<span style="font-size:11px">分</span></div>
         </div>
       </div>
-      ${exLogs.length>0?`<div style="font-size:10px;color:${G.muted};font-weight:700;margin-bottom:8px">直近の運動</div>`:""}
-      ${[...exLogs].reverse().slice(0,5).map(e=>`
-        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid ${G.border}">
-          <div style="font-size:9px;color:${G.muted};width:38px;flex-shrink:0">${e.date.slice(5)}</div>
-          <span style="font-size:14px">${e.emoji}</span>
-          <div style="flex:1;font-size:12px">${e.type}</div>
-          <div style="font-size:11px;font-weight:700;color:${G.pri}">${e.duration}分</div>
-        </div>`).join("")}
+      ${exTypes.length>0?`
+        <div style="font-size:10px;color:${G.muted};font-weight:700;letter-spacing:1px;margin-bottom:10px">種目別内訳</div>
+        ${exTypeBars}
+      `:`<div style="font-size:12px;color:${G.muted};text-align:center;padding:10px">運動記録がまだありません</div>`}
     </div>
 
-    <div style="text-align:center;font-size:11px;color:${G.muted};margin-top:8px">見てくれてありがとう 🌿<br/>応援よろしくね！</div>
+    <div style="text-align:center;font-size:11px;color:${G.muted};margin-top:8px;line-height:1.8">見てくれてありがとう 🌿<br/>応援よろしくね！</div>
   </div>`;
+}
+
+async function load(){
+  const res=await fetch(`https://raw.githubusercontent.com/${OWNER}/${REPO}/main/${PATH}?t=${Date.now()}`);
+  if(!res.ok)throw new Error(res.status);
+  return res.json();
 }
 
 load().then(render).catch(e=>{
