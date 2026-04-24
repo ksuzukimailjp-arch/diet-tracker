@@ -13,7 +13,8 @@
     },
     "2026-04-25": {
       "water": false,
-      "breakfast": true
+      "breakfast": true,
+      "walk": true
     }
   },
   "weights": {
