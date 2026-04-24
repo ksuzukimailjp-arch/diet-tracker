@@ -103,7 +103,8 @@ const PERIODS=[
 ];
 
 const toKey=(d)=>d.toISOString().slice(0,10);
-const todayKey=()=>toKey(new Date());
+// 朝4時を日付切り替えとする
+const todayKey=()=>{const d=new Date(Date.now()-4*60*60*1000);return d.toISOString().slice(0,10);};
 const getISOWeek=(d)=>{const t=new Date(d);t.setHours(0,0,0,0);t.setDate(t.getDate()+3-(t.getDay()+6)%7);const w=new Date(t.getFullYear(),0,4);return Math.round(((t-w)/86400000-3+(w.getDay()+6)%7)/7)+1;};
 const getWeekDays=()=>{const now=new Date(),dow=(now.getDay()+6)%7;return Array.from({length:7},(_,i)=>{const d=new Date(now);d.setDate(d.getDate()-dow+i);return toKey(d);});};
 const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
