@@ -6,7 +6,8 @@
     "2026-04-24": {
       "water": true,
       "breakfast": true,
-      "snack": true
+      "snack": true,
+      "walk": true
     }
   },
   "weights": {},
