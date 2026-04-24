@@ -105,8 +105,9 @@ const PERIODS=[
 const toKey=(d)=>d.toISOString().slice(0,10);
 // 朝4時を日付切り替えとする
 const todayKey=()=>{const d=new Date(Date.now()-4*60*60*1000);return d.toISOString().slice(0,10);};
+const nowJ=()=>new Date(Date.now()-4*60*60*1000);
 const getISOWeek=(d)=>{const t=new Date(d);t.setHours(0,0,0,0);t.setDate(t.getDate()+3-(t.getDay()+6)%7);const w=new Date(t.getFullYear(),0,4);return Math.round(((t-w)/86400000-3+(w.getDay()+6)%7)/7)+1;};
-const getWeekDays=()=>{const now=new Date(),dow=(now.getDay()+6)%7;return Array.from({length:7},(_,i)=>{const d=new Date(now);d.setDate(d.getDate()-dow+i);return toKey(d);});};
+const getWeekDays=()=>{const now=nowJ(),dow=(now.getDay()+6)%7;return Array.from({length:7},(_,i)=>{const d=new Date(now);d.setDate(d.getDate()-dow+i);return toKey(d);});};
 const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
 const diffDays=(a,b)=>Math.round((new Date(b)-new Date(a))/(1000*60*60*24));
 
@@ -304,7 +305,7 @@ function App(){
     ghFetch(token).then(d=>{setStore(d||blank());setLoading(false);}).catch(()=>{setSaveErr("読み込み失敗");setLoading(false);});
   },[token]);
 
-  const wDate=toKey(addDays(new Date(),wOffset));
+  const wDate=toKey(addDays(nowJ(),wOffset));
   useEffect(()=>{
     const w=(store.weights||{})[wDate];
     if(w){setWInput(String(w));return;}
@@ -340,7 +341,7 @@ function App(){
 
   useEffect(()=>{if(prevLvRef.current!==null&&curLv.lv>prevLvRef.current){setLvAnim(curLv);setTimeout(()=>setLvAnim(null),3000);}prevLvRef.current=curLv.lv;},[curLv.lv]);
 
-  const weekDays=getWeekDays(),weekNum=getISOWeek(new Date()),missions=getWeekMissions(weekNum);
+  const weekDays=getWeekDays(),weekNum=getISOWeek(nowJ()),missions=getWeekMissions(weekNum);
   const weekDayData=weekDays.map(k=>tasks[k]||{});
   const weekPcts=weekDays.map(k=>{const d=tasks[k]||{};return Math.round((TASKS.filter(t=>d[t.id]).reduce((s,t)=>s+t.points,0)/BASE_TOTAL)*100);});
   const weekAvg=Math.round(weekPcts.reduce((s,v)=>s+v,0)/7);
@@ -349,7 +350,7 @@ function App(){
 
   // ── Period filter ─────────────────────────────────────────────────────────
   const periodDays=PERIODS.find(p=>p.id===period)?.days||null;
-  const cutoff=periodDays?toKey(addDays(new Date(),-periodDays)):null;
+  const cutoff=periodDays?toKey(addDays(nowJ(),-periodDays)):null;
 
   const filteredWeights=useMemo(()=>
     Object.entries(weights).filter(([d,v])=>v!=null&&(!cutoff||d>=cutoff))
@@ -375,7 +376,7 @@ function App(){
 
     const goalDate=settings.goalDate?new Date(settings.goalDate):null;
     const goalWeight=settings.goalWeight?parseFloat(settings.goalWeight):null;
-    const today=new Date();
+    const today=nowJ();
     const daysFromStart=diffDays(startDate,today);
 
     // predict for goal date or 90 days ahead
@@ -434,7 +435,7 @@ function App(){
   },[filteredExLogs,weights]);
 
   const exByDay2={};exLogs.forEach(e=>{exByDay2[e.date]=(exByDay2[e.date]||0)+Number(e.duration||0);});
-  const ex14=Array.from({length:14},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(13-i));const k=toKey(d);return{label:DOW[(d.getDay()+6)%7],v:exByDay2[k]||0,key:k};});
+  const ex14=Array.from({length:14},(_,i)=>{const base=new Date(Date.now()-4*60*60*1000);base.setDate(base.getDate()-(13-i));const k=base.toISOString().slice(0,10);return{label:DOW[(base.getDay()+6)%7],v:exByDay2[k]||0,key:k};});
   const todayEx=exLogs.filter(e=>e.date===key);
 
   // handlers
@@ -595,7 +596,7 @@ function App(){
       {Object.keys(meals).length>0&&<div style={{...C()}}>
         <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:10}}>食事履歴（直近7日）</div>
         <div style={{display:"flex",gap:6,justifyContent:"space-between"}}>
-          {Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(6-i));const k=toKey(d),r=MEAL_RATINGS.find(x=>x.id===meals[k]);return(<div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}><span style={{fontSize:18,opacity:r?1:0.2}}>{r?r.emoji:"・"}</span><div style={{fontSize:8,color:k===key?G.pri:G.muted,fontWeight:k===key?700:400}}>{DOW[(d.getDay()+6)%7]}</div></div>);})}
+          {Array.from({length:7},(_,i)=>{const d=nowJ();d.setDate(d.getDate()-(6-i));const k=toKey(d),r=MEAL_RATINGS.find(x=>x.id===meals[k]);return(<div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}><span style={{fontSize:18,opacity:r?1:0.2}}>{r?r.emoji:"・"}</span><div style={{fontSize:8,color:k===key?G.pri:G.muted,fontWeight:k===key?700:400}}>{DOW[(d.getDay()+6)%7]}</div></div>);})}
         </div>
       </div>}
     </>}
@@ -685,7 +686,7 @@ function App(){
         <div style={{display:"flex",gap:5,alignItems:"flex-end",height:80}}>
           {dowStats.map((d,i)=>{
             const maxAvg=Math.max(...dowStats.map(x=>x.avg||0),1);
-            const isToday=(new Date().getDay()+6)%7===i;
+            const isToday=(nowJ().getDay()+6)%7===i;
             return(<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
               {d.avg!=null&&<div style={{fontSize:8,color:isToday?G.pri:G.muted,fontWeight:600}}>{d.avg}%</div>}
               <div style={{width:"100%",height:d.avg!=null?Math.max(4,(d.avg/maxAvg)*56):4,background:isToday?G.pri:d.avg!=null?G.priLight:G.border,borderRadius:4,opacity:d.avg!=null?1:0.3,transition:"height 0.4s"}}/>
