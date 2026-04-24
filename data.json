@@ -12,7 +12,8 @@
       "weigh": true
     },
     "2026-04-25": {
-      "water": false
+      "water": false,
+      "breakfast": true
     }
   },
   "weights": {
