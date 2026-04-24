@@ -7,7 +7,8 @@
       "water": true,
       "breakfast": true,
       "snack": true,
-      "walk": true
+      "walk": true,
+      "noLateEat": true
     }
   },
   "weights": {},
