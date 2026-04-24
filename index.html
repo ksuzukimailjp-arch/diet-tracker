@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="新郎Diet"/>
+<meta name="apple-mobile-web-app-title" content="Diet Tracker"/>
 <meta name="theme-color" content="#3a8a5a"/>
-<title>新郎ダイエットトラッカー</title>
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%233a8a5a'/%3E%3Ctext y='78' font-size='68' x='50' text-anchor='middle'%3E🤵%3C/text%3E%3C/svg%3E"/>
+<title>ダイエットトラッカー</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%233a8a5a'/%3E%3Ctext y='78' font-size='68' x='50' text-anchor='middle'%3E🌿%3C/text%3E%3C/svg%3E"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
@@ -26,7 +26,7 @@ input:focus{outline:none;border-color:#3a8a5a!important;box-shadow:0 0 0 3px rgb
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState,useEffect,useRef}=React;
+const {useState,useEffect,useRef,useMemo}=React;
 const G={bg:"#f2f6f2",card:"#fff",pri:"#3a8a5a",priMid:"#5aaa78",priLight:"#c8e6c9",priXLight:"#edf7ed",text:"#1a2e1a",muted:"#6a8a6a",border:"#d4e8d4"};
 const OWNER="ksuzukimailjp-arch",REPO="diet-tracker",PATH="data.json";
 
@@ -91,56 +91,105 @@ const EX_TYPES=[
 const EX_DURATIONS=[10,20,30,45,60,90];
 const DOW=["月","火","水","木","金","土","日"];
 
+// Period filter definitions
+const PERIODS=[
+  {id:"all",label:"全期間",days:null},
+  {id:"180",label:"6ヶ月",days:180},
+  {id:"90", label:"3ヶ月",days:90},
+  {id:"30", label:"1ヶ月",days:30},
+  {id:"15", label:"15日", days:15},
+  {id:"7",  label:"週",   days:7},
+  {id:"1",  label:"日",   days:1},
+];
+
 const toKey=(d)=>d.toISOString().slice(0,10);
 const todayKey=()=>toKey(new Date());
 const getISOWeek=(d)=>{const t=new Date(d);t.setHours(0,0,0,0);t.setDate(t.getDate()+3-(t.getDay()+6)%7);const w=new Date(t.getFullYear(),0,4);return Math.round(((t-w)/86400000-3+(w.getDay()+6)%7)/7)+1;};
 const getWeekDays=()=>{const now=new Date(),dow=(now.getDay()+6)%7;return Array.from({length:7},(_,i)=>{const d=new Date(now);d.setDate(d.getDate()-dow+i);return toKey(d);});};
 const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
+const diffDays=(a,b)=>Math.round((new Date(b)-new Date(a))/(1000*60*60*24));
 
-// Storage
+// Linear regression for weight prediction
+function linReg(points){
+  const n=points.length;if(n<2)return null;
+  const mx=points.reduce((s,p)=>s+p.x,0)/n;
+  const my=points.reduce((s,p)=>s+p.y,0)/n;
+  const num=points.reduce((s,p)=>s+(p.x-mx)*(p.y-my),0);
+  const den=points.reduce((s,p)=>s+(p.x-mx)**2,0);
+  if(den===0)return null;
+  const slope=num/den,intercept=my-slope*mx;
+  return{slope,intercept,predict:(x)=>slope*x+intercept};
+}
+
+// ── Storage ────────────────────────────────────────────────────────────────────
 const LS={
   getToken:()=>localStorage.getItem("gh_token")||"",
   setToken:(t)=>localStorage.setItem("gh_token",t),
   getSha:()=>localStorage.getItem("data_sha")||"",
   setSha:(s)=>localStorage.setItem("data_sha",s),
+  getSettings:()=>{try{return JSON.parse(localStorage.getItem("dt_settings")||"{}");}catch{return{};}},
+  setSettings:(s)=>localStorage.setItem("dt_settings",JSON.stringify(s)),
 };
 
-// GitHub API
+// ── GitHub API ─────────────────────────────────────────────────────────────────
 const ghH=(token)=>({"Authorization":`token ${token}`,"Content-Type":"application/json","Accept":"application/vnd.github.v3+json"});
+function toBase64(str){const bytes=new TextEncoder().encode(str);let bin="";bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin);}
+function fromBase64(b64){const bin=atob(b64);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return new TextDecoder().decode(bytes);}
 async function ghFetch(token){
   const res=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`,{headers:ghH(token)});
   if(!res.ok)throw new Error(res.status);
-  const j=await res.json();
-  LS.setSha(j.sha);
-  return JSON.parse(atob(j.content.replace(/\n/g,"")));
+  const j=await res.json();LS.setSha(j.sha);
+  return JSON.parse(fromBase64(j.content.replace(/\n/g,"")));
 }
 async function ghSave(token,data){
-  const body={message:"update diet data",content:btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2)))),sha:LS.getSha()};
+  const body={message:"update diet data",content:toBase64(JSON.stringify(data,null,2)),sha:LS.getSha()};
   const res=await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`,{method:"PUT",headers:ghH(token),body:JSON.stringify(body)});
   if(!res.ok)throw new Error(res.status);
-  const j=await res.json();
-  LS.setSha(j.content.sha);
+  const j=await res.json();LS.setSha(j.content.sha);
 }
 const blank=()=>({tasks:{},weights:{},meals:{},exercises:[]});
 
-// ── Components ────────────────────────────────────────────────────────────────
-function LineChart({data,color=G.pri,height=90}){
+// ── SVG Line Chart (supports prediction line) ──────────────────────────────────
+function LineChart({data,predData,color=G.pri,predColor="#f4845f",height=100,goalY=null,goalColor="#c9a84c"}){
   if(!data||data.length<2)return<div style={{height,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontSize:11}}>2件以上記録するとグラフが表示されます</div>;
-  const vals=data.map(d=>d.v),mn=Math.min(...vals),mx=Math.max(...vals),pad=26,W=320,H=height;
-  const px=(i)=>pad+(i/(data.length-1))*(W-pad*2);
-  const py=(v)=>mx===mn?H/2:H-pad-(((v-mn)/(mx-mn))*(H-pad*2));
+  const allVals=[...data.map(d=>d.v),...(predData||[]).map(d=>d.v),goalY!=null?goalY:null].filter(v=>v!=null);
+  const mn=Math.min(...allVals)-0.5,mx=Math.max(...allVals)+0.5;
+  const pad=28,W=320,H=height;
+  const allPts=[...data,...(predData||[])];
+  const totalLen=allPts.length;
+  const px=(i)=>pad+(i/(totalLen-1))*(W-pad*2);
+  const py=(v)=>H-pad-(((v-mn)/(mx-mn))*(H-pad*2));
   const pts=data.map((d,i)=>`${px(i)},${py(d.v)}`).join(" ");
+  const predPts=predData?predData.map((d,i)=>`${px(data.length-1+i)},${py(d.v)}`).join(" "):null;
   const area=`M${px(0)},${py(data[0].v)} `+data.map((d,i)=>`L${px(i)},${py(d.v)}`).join(" ")+` L${px(data.length-1)},${H} L${px(0)},${H} Z`;
   const step=Math.ceil(data.length/6);
   return(<svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height,display:"block"}}>
-    <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.2"/><stop offset="100%" stopColor={color} stopOpacity="0"/></linearGradient></defs>
-    <path d={area} fill="url(#ag)"/><polyline points={pts} fill="none" stroke={color} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round"/>
-    {data.map((d,i)=>(<g key={i}><circle cx={px(i)} cy={py(d.v)} r="3.5" fill={color}/>
-      {(i===0||i===data.length-1||i%step===0)&&<><text x={px(i)} y={py(d.v)-8} textAnchor="middle" fontSize="8" fill={G.muted}>{d.v}</text><text x={px(i)} y={H-1} textAnchor="middle" fontSize="7" fill={G.muted}>{d.label}</text></>}
+    <defs>
+      <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.18"/><stop offset="100%" stopColor={color} stopOpacity="0"/></linearGradient>
+    </defs>
+    {goalY!=null&&<line x1={pad} y1={py(goalY)} x2={W-pad} y2={py(goalY)} stroke={goalColor} strokeWidth="1.5" strokeDasharray="4,3" opacity="0.7"/>}
+    {goalY!=null&&<text x={W-pad+2} y={py(goalY)+4} fontSize="8" fill={goalColor}>目標</text>}
+    <path d={area} fill="url(#ag)"/>
+    <polyline points={pts} fill="none" stroke={color} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round"/>
+    {predPts&&<polyline points={predPts} fill="none" stroke={predColor} strokeWidth="1.8" strokeDasharray="5,3" strokeLinejoin="round" strokeLinecap="round"/>}
+    {data.map((d,i)=>(<g key={i}>
+      <circle cx={px(i)} cy={py(d.v)} r="3" fill={color}/>
+      {(i===0||i===data.length-1||i%step===0)&&<>
+        <text x={px(i)} y={py(d.v)-7} textAnchor="middle" fontSize="8" fill={G.muted}>{d.v}</text>
+        <text x={px(i)} y={H-1} textAnchor="middle" fontSize="7" fill={G.muted}>{d.label}</text>
+      </>}
+    </g>))}
+    {predData&&predData.map((d,i)=>(<g key={"p"+i}>
+      <circle cx={px(data.length-1+i)} cy={py(d.v)} r="2.5" fill={predColor} opacity="0.7"/>
+      {i===predData.length-1&&<>
+        <text x={px(data.length-1+i)} y={py(d.v)-7} textAnchor="middle" fontSize="8" fill={predColor}>{d.v.toFixed(1)}</text>
+        <text x={px(data.length-1+i)} y={H-1} textAnchor="middle" fontSize="7" fill={predColor}>{d.label}</text>
+      </>}
     </g>))}
   </svg>);
 }
 
+// ── WeightInput ────────────────────────────────────────────────────────────────
 function WeightInput({value,onChange,onSave,saved,saving}){
   const adj=(delta)=>{const cur=parseFloat(value)||0,next=Math.round((cur+delta)*10)/10;if(next>=30&&next<=300)onChange(String(next));};
   return(<div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -160,6 +209,7 @@ function WeightInput({value,onChange,onSave,saved,saving}){
   </div>);
 }
 
+// ── ExerciseLogger ─────────────────────────────────────────────────────────────
 function ExerciseLogger({onSave,saving}){
   const [selType,setSelType]=useState(null),[selDur,setSelDur]=useState(null),[saved,setSaved]=useState(false);
   const handle=async()=>{
@@ -186,6 +236,7 @@ function ExerciseLogger({onSave,saving}){
   </div>);
 }
 
+// ── MealRater ──────────────────────────────────────────────────────────────────
 function MealRater({current,onRate}){
   return(<div style={{display:"flex",flexDirection:"column",gap:7}}>
     {MEAL_RATINGS.map(r=>{const sel=current===r.id;return(
@@ -198,6 +249,7 @@ function MealRater({current,onRate}){
   </div>);
 }
 
+// ── SetupScreen ────────────────────────────────────────────────────────────────
 function SetupScreen({onDone}){
   const [tok,setTok]=useState(""),[testing,setTesting]=useState(false),[err,setErr]=useState("");
   const submit=async()=>{
@@ -208,7 +260,7 @@ function SetupScreen({onDone}){
     finally{setTesting(false);}
   };
   return(<div style={{minHeight:"100vh",background:G.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px"}}>
-    <div style={{fontSize:48,marginBottom:16}}>🤵</div>
+    <div style={{fontSize:48,marginBottom:16}}>🌿</div>
     <div style={{fontSize:20,fontWeight:800,color:G.text,marginBottom:6}}>初回セットアップ</div>
     <div style={{fontSize:12,color:G.muted,marginBottom:24,textAlign:"center",lineHeight:1.8}}>GitHubのPersonal Access Tokenを入力してください。<br/>データがGitHubに自動保存されます。</div>
     <div style={{width:"100%",maxWidth:360}}>
@@ -223,7 +275,7 @@ function SetupScreen({onDone}){
   </div>);
 }
 
-// ── MAIN ──────────────────────────────────────────────────────────────────────
+// ── MAIN ───────────────────────────────────────────────────────────────────────
 function App(){
   const [token,setToken]=useState(LS.getToken());
   const [store,setStore]=useState(blank());
@@ -237,6 +289,12 @@ function App(){
   const [wInput,setWInput]=useState("");
   const [wSaved,setWSaved]=useState(false);
   const [wOffset,setWOffset]=useState(0);
+  const [period,setPeriod]=useState("all");
+  // settings state
+  const [settings,setSettings]=useState(()=>LS.getSettings());
+  const [sName,setSName]=useState("");
+  const [sGoalDate,setSGoalDate]=useState("");
+  const [sGoalWeight,setSGoalWeight]=useState("");
   const prevLvRef=useRef(null);
   const key=todayKey();
 
@@ -288,42 +346,158 @@ function App(){
   const rank=getRank(weekAvg),nextRank=getNextRank(rank);
   const missionsDone=missions.map(m=>m.check(weekDayData.map(d=>Object.fromEntries(TASKS.map(t=>[t.id,!!d[t.id]])))));
 
-  const wHist=Object.entries(weights).filter(([,v])=>v!=null).sort(([a],[b])=>a.localeCompare(b)).slice(-30).map(([date,v])=>({label:date.slice(5),v}));
-  const latestW=wHist.length?wHist[wHist.length-1].v:null,firstW=wHist.length?wHist[0].v:null;
+  // ── Period filter ─────────────────────────────────────────────────────────
+  const periodDays=PERIODS.find(p=>p.id===period)?.days||null;
+  const cutoff=periodDays?toKey(addDays(new Date(),-periodDays)):null;
+
+  const filteredWeights=useMemo(()=>
+    Object.entries(weights).filter(([d,v])=>v!=null&&(!cutoff||d>=cutoff))
+      .sort(([a],[b])=>a.localeCompare(b)),[weights,cutoff]);
+  const filteredTasks=useMemo(()=>
+    Object.entries(tasks).filter(([d])=>!cutoff||d>=cutoff),[tasks,cutoff]);
+  const filteredExLogs=useMemo(()=>
+    exLogs.filter(e=>!cutoff||e.date>=cutoff),[exLogs,cutoff]);
+
+  // Weight history for chart
+  const wHist=filteredWeights.slice(-60).map(([date,v])=>({label:date.slice(5),v,date}));
+  const latestW=wHist.length?wHist[wHist.length-1].v:null;
+  const firstW=wHist.length?wHist[0].v:null;
   const wDiff=latestW&&firstW?(latestW-firstW).toFixed(1):null;
 
-  const exByDay={};exLogs.forEach(e=>{exByDay[e.date]=(exByDay[e.date]||0)+Number(e.duration||0);});
-  const ex14=Array.from({length:14},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(13-i));const k=toKey(d);return{label:DOW[(d.getDay()+6)%7],v:exByDay[k]||0,key:k};});
+  // ── Weight prediction (linear regression) ────────────────────────────────
+  const {predData,predMsg}=useMemo(()=>{
+    if(wHist.length<3)return{predData:null,predMsg:null};
+    const startDate=new Date(wHist[0].date);
+    const points=wHist.map(d=>({x:diffDays(startDate,new Date(d.date)),y:d.v}));
+    const reg=linReg(points);
+    if(!reg)return{predData:null,predMsg:null};
+
+    const goalDate=settings.goalDate?new Date(settings.goalDate):null;
+    const goalWeight=settings.goalWeight?parseFloat(settings.goalWeight):null;
+    const today=new Date();
+    const daysFromStart=diffDays(startDate,today);
+
+    // predict for goal date or 90 days ahead
+    const targetDays=goalDate?diffDays(startDate,goalDate):daysFromStart+90;
+    const predWeight=Math.round(reg.predict(targetDays)*10)/10;
+
+    // build prediction line points (from last real data to target)
+    const lastX=points[points.length-1].x;
+    const steps=Math.min(Math.max(targetDays-lastX,1),90);
+    const stepSize=Math.max(1,Math.floor(steps/6));
+    const pred=[];
+    for(let i=stepSize;i<=steps;i+=stepSize){
+      const d=addDays(startDate,lastX+i);
+      pred.push({label:toKey(d).slice(5),v:Math.round(reg.predict(lastX+i)*10)/10});
+    }
+
+    let msg="";
+    if(goalDate&&goalWeight){
+      const diff=(predWeight-goalWeight).toFixed(1);
+      const daysLeft=diffDays(today,goalDate);
+      if(Number(diff)<=0)msg=`このペースなら目標日に ${predWeight}kg → 目標達成できそう！🎉`;
+      else msg=`このペースだと目標日に ${predWeight}kg（目標まであと ${diff}kg）`;
+      msg+=` | 目標日まで${daysLeft}日`;
+    } else if(goalDate){
+      const daysLeft=diffDays(today,goalDate);
+      msg=`このペースだと目標日(${daysLeft}日後)に ${predWeight}kg`;
+    } else {
+      const monthly=Math.round(reg.slope*30*10)/10;
+      msg=`月約${monthly>0?"+":""}${monthly}kgのペース`;
+    }
+    return{predData:pred,predMsg:msg};
+  },[wHist,settings]);
+
+  // ── Day-of-week analysis ──────────────────────────────────────────────────
+  const dowStats=useMemo(()=>{
+    const counts=Array(7).fill(0),sums=Array(7).fill(0);
+    filteredTasks.forEach(([date,day])=>{
+      const d=new Date(date),dow=(d.getDay()+6)%7;
+      const pct=Math.round((TASKS.filter(t=>day[t.id]).reduce((s,t)=>s+t.points,0)/BASE_TOTAL)*100);
+      counts[dow]++;sums[dow]+=pct;
+    });
+    return DOW.map((label,i)=>({label,avg:counts[i]?Math.round(sums[i]/counts[i]):null,count:counts[i]}));
+  },[filteredTasks]);
+
+  // ── Exercise vs weight correlation ────────────────────────────────────────
+  const correlationData=useMemo(()=>{
+    const exByDay={};
+    filteredExLogs.forEach(e=>{exByDay[e.date]=(exByDay[e.date]||0)+Number(e.duration||0);});
+    const pairs=[];
+    Object.entries(exByDay).forEach(([date,min])=>{
+      const nextDay=toKey(addDays(new Date(date),1));
+      const w0=weights[date],w1=weights[nextDay];
+      if(w0!=null&&w1!=null)pairs.push({exMin:min,wChange:Math.round((w1-w0)*10)/10});
+    });
+    return pairs;
+  },[filteredExLogs,weights]);
+
+  const exByDay2={};exLogs.forEach(e=>{exByDay2[e.date]=(exByDay2[e.date]||0)+Number(e.duration||0);});
+  const ex14=Array.from({length:14},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(13-i));const k=toKey(d);return{label:DOW[(d.getDay()+6)%7],v:exByDay2[k]||0,key:k};});
   const todayEx=exLogs.filter(e=>e.date===key);
 
+  // handlers
   const toggle=(id)=>update({...store,tasks:{...tasks,[key]:{...checked,[id]:!checked[id]}}});
   const saveW=async()=>{const v=parseFloat(wInput);if(isNaN(v)||v<30||v>300)return;update({...store,weights:{...weights,[wDate]:v}});setWSaved(true);setTimeout(()=>setWSaved(false),1500);};
   const rateM=(id)=>update({...store,meals:{...meals,[key]:id}});
   const saveEx=async({type,duration})=>update({...store,exercises:[...exLogs,{id:Date.now(),date:key,type:type.label,emoji:type.emoji,duration}]});
   const delEx=(id)=>update({...store,exercises:exLogs.filter(e=>e.id!==id)});
+  const saveSettings=()=>{const s={name:sName,goalDate:sGoalDate,goalWeight:sGoalWeight};setSettings(s);LS.setSettings(s);setShowSettings(false);};
 
   const C=(ex={})=>({background:G.card,borderRadius:14,padding:"14px",boxShadow:"0 1px 10px rgba(40,90,60,0.08)",border:`1px solid ${G.border}`,...ex});
-  const TABS=[["today","今日"],["meal","食事"],["record","体重・運動"],["progress","進捗"]];
+  const TABS=[["today","今日"],["meal","食事"],["record","体重・運動"],["analysis","分析"],["progress","進捗"]];
+  const displayName=settings.name||"新郎";
 
   if(!token)return<SetupScreen onDone={(t)=>{setToken(t);setLoading(true);}}/>;
   if(loading)return(<div style={{minHeight:"100vh",background:G.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14}}><div style={{fontSize:36}} className="spin">🌿</div><div style={{fontSize:13,color:G.muted}}>データを読み込み中...</div></div>);
 
-  if(showSettings)return(<div style={{minHeight:"100vh",background:G.bg,padding:"24px 16px"}}>
-    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
-      <button onClick={()=>setShowSettings(false)} style={{border:"none",background:"none",fontSize:22,cursor:"pointer",color:G.pri}}>←</button>
-      <div style={{fontSize:16,fontWeight:800}}>設定</div>
-    </div>
-    <div style={{...C({marginBottom:14})}}>
-      <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:8}}>GitHub Token</div>
-      <div style={{fontSize:11,color:G.muted,marginBottom:10}}>現在: {LS.getToken().slice(0,8)}...</div>
-      <button onClick={()=>{LS.setToken("");setToken("");setShowSettings(false);}} style={{width:"100%",padding:"10px",borderRadius:9,border:`1.5px solid #c05030`,background:"#fff5f5",color:"#c05030",fontSize:13,fontWeight:700,cursor:"pointer"}}>トークンをリセットして再設定</button>
-    </div>
-    <div style={{...C()}}>
-      <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:8}}>📊 観覧ページURL</div>
-      <div style={{fontSize:11,color:G.muted,marginBottom:8,lineHeight:1.6}}>このURLを共有すると進捗を見てもらえます：</div>
-      <div style={{padding:"10px 12px",background:G.priXLight,borderRadius:9,fontSize:11,color:G.pri,fontWeight:600,wordBreak:"break-all"}}>https://{OWNER}.github.io/{REPO}/view.html</div>
-    </div>
-  </div>);
+  // Settings screen
+  if(showSettings){
+    const s=settings;
+    return(<div style={{minHeight:"100vh",background:G.bg,padding:"24px 16px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
+        <button onClick={()=>setShowSettings(false)} style={{border:"none",background:"none",fontSize:22,cursor:"pointer",color:G.pri}}>←</button>
+        <div style={{fontSize:16,fontWeight:800}}>設定</div>
+      </div>
+
+      {/* Personal settings */}
+      <div style={{...C({marginBottom:14})}}>
+        <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:12}}>👤 プロフィール</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <div>
+            <div style={{fontSize:11,color:G.muted,marginBottom:4}}>名前</div>
+            <input placeholder="例: 太郎" defaultValue={s.name||""} onChange={e=>setSName(e.target.value)}
+              style={{width:"100%",padding:"9px 12px",borderRadius:9,border:`1.5px solid ${G.border}`,fontSize:13,color:G.text,background:G.bg}}/>
+          </div>
+          <div>
+            <div style={{fontSize:11,color:G.muted,marginBottom:4}}>目標日（例: 結婚式）</div>
+            <input type="date" defaultValue={s.goalDate||""} onChange={e=>setSGoalDate(e.target.value)}
+              style={{width:"100%",padding:"9px 12px",borderRadius:9,border:`1.5px solid ${G.border}`,fontSize:13,color:G.text,background:G.bg}}/>
+          </div>
+          <div>
+            <div style={{fontSize:11,color:G.muted,marginBottom:4}}>目標体重 (kg)</div>
+            <input type="number" step="0.1" placeholder="例: 68.0" defaultValue={s.goalWeight||""} onChange={e=>setSGoalWeight(e.target.value)}
+              style={{width:"100%",padding:"9px 12px",borderRadius:9,border:`1.5px solid ${G.border}`,fontSize:13,color:G.text,background:G.bg}}/>
+          </div>
+          <button onClick={saveSettings} style={{width:"100%",padding:"10px",borderRadius:9,border:"none",background:G.pri,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>保存する</button>
+        </div>
+      </div>
+
+      {/* Token */}
+      <div style={{...C({marginBottom:14})}}>
+        <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:8}}>🔑 GitHub Token</div>
+        <div style={{fontSize:11,color:G.muted,marginBottom:10}}>現在: {LS.getToken().slice(0,8)}...</div>
+        <button onClick={()=>{LS.setToken("");setToken("");setShowSettings(false);}} style={{width:"100%",padding:"10px",borderRadius:9,border:`1.5px solid #c05030`,background:"#fff5f5",color:"#c05030",fontSize:13,fontWeight:700,cursor:"pointer"}}>トークンをリセットして再設定</button>
+      </div>
+
+      {/* View URL */}
+      <div style={{...C()}}>
+        <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:8}}>📊 観覧ページURL</div>
+        <div style={{fontSize:11,color:G.muted,marginBottom:8,lineHeight:1.6}}>このURLを共有すると進捗を見てもらえます：</div>
+        <div style={{padding:"10px 12px",background:G.priXLight,borderRadius:9,fontSize:11,color:G.pri,fontWeight:600,wordBreak:"break-all"}}>https://{OWNER}.github.io/{REPO}/view.html</div>
+      </div>
+    </div>);
+  }
 
   return(<div style={{minHeight:"100vh",background:G.bg,padding:"20px 16px 40px",maxWidth:480,margin:"0 auto",color:G.text}}>
 
@@ -336,11 +510,13 @@ function App(){
     {/* Header */}
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
       <div>
-        <div style={{fontSize:10,letterSpacing:3,color:G.muted,fontWeight:600,marginBottom:2}}>WEDDING DIET TRACKER</div>
-        <div style={{fontSize:20,fontWeight:800}}>理想の新郎へ 🤵</div>
-        <div style={{fontSize:11,color:G.muted,marginTop:2}}>{new Date().toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"})}</div>
+        <div style={{fontSize:10,letterSpacing:3,color:G.muted,fontWeight:600,marginBottom:2}}>DIET TRACKER</div>
+        <div style={{fontSize:20,fontWeight:800}}>理想の{displayName}へ 🌿</div>
+        <div style={{fontSize:11,color:G.muted,marginTop:2}}>{new Date().toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"})}
+          {settings.goalDate&&<span style={{marginLeft:8,color:G.pri,fontWeight:600}}>目標日まで{diffDays(new Date(),new Date(settings.goalDate))}日</span>}
+        </div>
       </div>
-      <button onClick={()=>setShowSettings(true)} style={{border:"none",background:"none",fontSize:22,cursor:"pointer",color:G.muted,padding:"4px"}}>⚙️</button>
+      <button onClick={()=>{const s=LS.getSettings();setSName(s.name||"");setSGoalDate(s.goalDate||"");setSGoalWeight(s.goalWeight||"");setShowSettings(true);}} style={{border:"none",background:"none",fontSize:22,cursor:"pointer",color:G.muted,padding:"4px"}}>⚙️</button>
     </div>
 
     {/* Level */}
@@ -369,11 +545,11 @@ function App(){
     </div>
 
     {/* Tabs */}
-    <div style={{display:"flex",gap:3,marginBottom:14,background:G.priXLight,borderRadius:10,padding:3}}>
-      {TABS.map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"7px 2px",borderRadius:8,border:"none",background:tab===id?G.card:"transparent",color:tab===id?G.pri:G.muted,fontWeight:tab===id?800:500,fontSize:10,cursor:"pointer",boxShadow:tab===id?"0 1px 4px rgba(40,90,60,0.1)":"none",transition:"all 0.15s"}}>{label}</button>))}
+    <div style={{display:"flex",gap:2,marginBottom:14,background:G.priXLight,borderRadius:10,padding:3}}>
+      {TABS.map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:1,padding:"7px 1px",borderRadius:8,border:"none",background:tab===id?G.card:"transparent",color:tab===id?G.pri:G.muted,fontWeight:tab===id?800:500,fontSize:9,cursor:"pointer",boxShadow:tab===id?"0 1px 4px rgba(40,90,60,0.1)":"none",transition:"all 0.15s"}}>{label}</button>))}
     </div>
 
-    {/* TODAY */}
+    {/* ══ TODAY ══════════════════════════════════════════════════════════════ */}
     {tab==="today"&&<>
       <div style={{...C({display:"flex",alignItems:"center",gap:16,marginBottom:12})}}>
         <div style={{position:"relative",width:70,height:70,flexShrink:0}}>
@@ -407,7 +583,7 @@ function App(){
       </div>
     </>}
 
-    {/* MEAL */}
+    {/* ══ MEAL ═══════════════════════════════════════════════════════════════ */}
     {tab==="meal"&&<>
       <div style={{...C({marginBottom:14})}}>
         <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:4}}>🍽️ 今日の食事</div>
@@ -423,7 +599,7 @@ function App(){
       </div>}
     </>}
 
-    {/* RECORD */}
+    {/* ══ RECORD ══════════════════════════════════════════════════════════════ */}
     {tab==="record"&&<>
       <div style={{...C({marginBottom:14})}}>
         <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:12}}>⚖️ 体重記録</div>
@@ -435,8 +611,9 @@ function App(){
         {latestW&&<div style={{display:"flex",gap:10,marginBottom:12}}>
           <div style={{flex:1,background:G.priXLight,borderRadius:10,padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:9,color:G.muted,marginBottom:2}}>最新</div><div style={{fontSize:20,fontWeight:800,color:G.pri}}>{latestW}<span style={{fontSize:11}}>kg</span></div></div>
           {wDiff!==null&&<div style={{flex:1,background:G.priXLight,borderRadius:10,padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:9,color:G.muted,marginBottom:2}}>記録開始から</div><div style={{fontSize:20,fontWeight:800,color:Number(wDiff)<=0?"#3a8a5a":"#c05030"}}>{Number(wDiff)>0?"+":""}{wDiff}<span style={{fontSize:11}}>kg</span></div></div>}
+          {settings.goalWeight&&latestW&&<div style={{flex:1,background:G.priXLight,borderRadius:10,padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:9,color:G.muted,marginBottom:2}}>目標まで</div><div style={{fontSize:20,fontWeight:800,color:G.pri}}>{(latestW-parseFloat(settings.goalWeight)).toFixed(1)}<span style={{fontSize:11}}>kg</span></div></div>}
         </div>}
-        <LineChart data={wHist} color={G.pri} height={90}/>
+        <LineChart data={wHist} color={G.pri} height={90} goalY={settings.goalWeight?parseFloat(settings.goalWeight):null}/>
         <div style={{marginTop:12}}><WeightInput value={wInput} onChange={setWInput} onSave={saveW} saved={wSaved} saving={saving}/></div>
       </div>
 
@@ -474,7 +651,107 @@ function App(){
       </div>}
     </>}
 
-    {/* PROGRESS */}
+    {/* ══ ANALYSIS ═══════════════════════════════════════════════════════════ */}
+    {tab==="analysis"&&<>
+      {/* Period filter */}
+      <div style={{...C({marginBottom:14,padding:"10px 12px"})}}>
+        <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:8}}>期間</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+          {PERIODS.map(p=>{const sel=period===p.id;return(
+            <button key={p.id} onClick={()=>setPeriod(p.id)} style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${sel?G.pri:G.border}`,background:sel?G.priXLight:G.card,fontSize:11,fontWeight:sel?700:500,color:sel?G.pri:G.muted,cursor:"pointer",transition:"all 0.15s"}}>{p.label}</button>
+          );})}
+        </div>
+      </div>
+
+      {/* Weight prediction */}
+      <div style={{...C({marginBottom:14})}}>
+        <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:4}}>⚖️ 体重推移・予測</div>
+        {predMsg&&<div style={{fontSize:11,color:G.pri,fontWeight:600,marginBottom:10,padding:"8px 10px",background:G.priXLight,borderRadius:8,lineHeight:1.5}}>{predMsg}</div>}
+        {wHist.length>=2?
+          <LineChart data={wHist} predData={predData} color={G.pri} predColor="#f4845f" height={110} goalY={settings.goalWeight?parseFloat(settings.goalWeight):null}/>
+          :<div style={{textAlign:"center",color:G.muted,fontSize:11,padding:"20px 0"}}>体重を2件以上記録するとグラフと予測が表示されます</div>
+        }
+        {predData&&<div style={{display:"flex",alignItems:"center",gap:12,marginTop:8,fontSize:10,color:G.muted}}>
+          <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:16,height:2,background:G.pri,borderRadius:1}}/><span>実績</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:16,height:2,background:"#f4845f",borderRadius:1,borderTop:"1px dashed #f4845f"}}/><span>予測</span></div>
+          {settings.goalWeight&&<div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:16,height:1,background:"#c9a84c",borderRadius:1}}/><span>目標</span></div>}
+        </div>}
+      </div>
+
+      {/* Day-of-week analysis */}
+      <div style={{...C({marginBottom:14})}}>
+        <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:12}}>📅 曜日別達成率</div>
+        <div style={{display:"flex",gap:5,alignItems:"flex-end",height:80}}>
+          {dowStats.map((d,i)=>{
+            const maxAvg=Math.max(...dowStats.map(x=>x.avg||0),1);
+            const isToday=(new Date().getDay()+6)%7===i;
+            return(<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+              {d.avg!=null&&<div style={{fontSize:8,color:isToday?G.pri:G.muted,fontWeight:600}}>{d.avg}%</div>}
+              <div style={{width:"100%",height:d.avg!=null?Math.max(4,(d.avg/maxAvg)*56):4,background:isToday?G.pri:d.avg!=null?G.priLight:G.border,borderRadius:4,opacity:d.avg!=null?1:0.3,transition:"height 0.4s"}}/>
+              <div style={{fontSize:9,color:isToday?G.pri:G.muted,fontWeight:isToday?700:400}}>{d.label}</div>
+              {d.count>0&&<div style={{fontSize:7,color:G.muted}}>{d.count}日</div>}
+            </div>);
+          })}
+        </div>
+        {(()=>{
+          const valid=dowStats.filter(d=>d.avg!=null);
+          if(valid.length===0)return null;
+          const best=valid.reduce((a,b)=>a.avg>b.avg?a:b);
+          const worst=valid.reduce((a,b)=>a.avg<b.avg?a:b);
+          return(<div style={{display:"flex",gap:8,marginTop:10}}>
+            <div style={{flex:1,background:G.priXLight,borderRadius:9,padding:"8px 10px",textAlign:"center"}}>
+              <div style={{fontSize:9,color:G.muted}}>一番強い曜日</div>
+              <div style={{fontSize:14,fontWeight:800,color:G.pri}}>{best.label}曜日</div>
+              <div style={{fontSize:10,color:G.muted}}>{best.avg}%</div>
+            </div>
+            <div style={{flex:1,background:"#fff5f5",borderRadius:9,padding:"8px 10px",textAlign:"center",border:`1px solid #f0d0d0`}}>
+              <div style={{fontSize:9,color:G.muted}}>要注意の曜日</div>
+              <div style={{fontSize:14,fontWeight:800,color:"#c05030"}}>{worst.label}曜日</div>
+              <div style={{fontSize:10,color:G.muted}}>{worst.avg}%</div>
+            </div>
+          </div>);
+        })()}
+      </div>
+
+      {/* Exercise vs weight correlation */}
+      <div style={{...C({marginBottom:14})}}>
+        <div style={{fontSize:10,color:G.muted,fontWeight:700,letterSpacing:2,marginBottom:4}}>💪 運動と体重変化の相関</div>
+        <div style={{fontSize:11,color:G.muted,marginBottom:12}}>運動した翌日の体重変化を集計</div>
+        {correlationData.length>=3?(()=>{
+          const noEx=correlationData.filter(p=>p.exMin===0);
+          const withEx=correlationData.filter(p=>p.exMin>0);
+          const avgNoEx=noEx.length?Math.round(noEx.reduce((s,p)=>s+p.wChange,0)/noEx.length*100)/100:null;
+          const avgWithEx=withEx.length?Math.round(withEx.reduce((s,p)=>s+p.wChange,0)/withEx.length*100)/100:null;
+          const lightEx=withEx.filter(p=>p.exMin<=30);
+          const heavyEx=withEx.filter(p=>p.exMin>30);
+          const avgLight=lightEx.length?Math.round(lightEx.reduce((s,p)=>s+p.wChange,0)/lightEx.length*100)/100:null;
+          const avgHeavy=heavyEx.length?Math.round(heavyEx.reduce((s,p)=>s+p.wChange,0)/heavyEx.length*100)/100:null;
+          const fmt=(v)=>v==null?"データ不足":v>0?`+${v}kg`:`${v}kg`;
+          const col=(v)=>v==null?G.muted:v<=0?"#3a8a5a":"#c05030";
+          return(<>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+              {[
+                {label:"運動なしの翌日",val:avgNoEx,n:noEx.length},
+                {label:"運動ありの翌日",val:avgWithEx,n:withEx.length},
+                {label:"軽め（〜30分）の翌日",val:avgLight,n:lightEx.length},
+                {label:"しっかり（30分超）の翌日",val:avgHeavy,n:heavyEx.length},
+              ].map((item,i)=>(
+                <div key={i} style={{background:G.priXLight,borderRadius:10,padding:"10px 12px",textAlign:"center"}}>
+                  <div style={{fontSize:9,color:G.muted,marginBottom:4,lineHeight:1.4}}>{item.label}</div>
+                  <div style={{fontSize:16,fontWeight:800,color:col(item.val)}}>{fmt(item.val)}</div>
+                  <div style={{fontSize:8,color:G.muted,marginTop:2}}>{item.n}日分</div>
+                </div>
+              ))}
+            </div>
+            {avgWithEx!=null&&avgNoEx!=null&&<div style={{padding:"8px 12px",background:avgWithEx<avgNoEx?G.priXLight:"#fff5f5",borderRadius:9,fontSize:11,fontWeight:600,color:avgWithEx<avgNoEx?G.pri:"#c05030",textAlign:"center"}}>
+              {avgWithEx<avgNoEx?`運動した日は翌日が平均${Math.abs(Math.round((avgWithEx-avgNoEx)*100)/100)}kg少ない！💪`:"もっと運動の効果が出てくるはず、続けよう🌱"}
+            </div>}
+          </>);
+        })():<div style={{textAlign:"center",color:G.muted,fontSize:11,padding:"20px 0"}}>体重と運動を数日記録すると相関が表示されます</div>}
+      </div>
+    </>}
+
+    {/* ══ PROGRESS ════════════════════════════════════════════════════════════ */}
     {tab==="progress"&&<>
       <div style={{...C({marginBottom:14,background:`linear-gradient(135deg,${rank.color}15,${G.card})`,borderColor:rank.color+"40"})}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
