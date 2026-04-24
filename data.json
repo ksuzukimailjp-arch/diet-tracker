@@ -8,7 +8,8 @@
       "breakfast": true,
       "snack": true,
       "walk": true,
-      "noLateEat": true
+      "noLateEat": true,
+      "weigh": true
     }
   },
   "weights": {},
