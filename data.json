@@ -10,6 +10,9 @@
       "walk": true,
       "noLateEat": true,
       "weigh": true
+    },
+    "2026-04-25": {
+      "water": true
     }
   },
   "weights": {
