@@ -16,6 +16,9 @@
       "breakfast": true,
       "walk": true,
       "vegFirst": true
+    },
+    "2026-04-27": {
+      "breakfast": true
     }
   },
   "weights": {
