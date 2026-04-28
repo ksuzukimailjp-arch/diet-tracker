@@ -24,7 +24,8 @@
       "vegFirst": true,
       "noLateEat": true,
       "snack": true,
-      "breakfast": true
+      "breakfast": true,
+      "weigh": true
     }
   },
   "weights": {
