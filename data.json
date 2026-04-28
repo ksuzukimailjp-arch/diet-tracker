@@ -23,7 +23,8 @@
     "2026-04-28": {
       "vegFirst": true,
       "noLateEat": true,
-      "snack": true
+      "snack": true,
+      "breakfast": true
     }
   },
   "weights": {
