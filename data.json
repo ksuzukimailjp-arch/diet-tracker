@@ -39,7 +39,8 @@
       "breakfast": true,
       "water": true,
       "noLateEat": true,
-      "snack": true
+      "snack": true,
+      "walk": true
     }
   },
   "weights": {
