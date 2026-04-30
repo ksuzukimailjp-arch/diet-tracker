@@ -36,7 +36,8 @@
     },
     "2026-04-30": {
       "vegFirst": true,
-      "breakfast": true
+      "breakfast": true,
+      "water": true
     }
   },
   "weights": {
