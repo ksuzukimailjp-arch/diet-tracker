@@ -38,7 +38,8 @@
       "vegFirst": true,
       "breakfast": true,
       "water": true,
-      "noLateEat": true
+      "noLateEat": true,
+      "snack": true
     }
   },
   "weights": {
