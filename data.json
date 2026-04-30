@@ -40,7 +40,8 @@
       "water": true,
       "noLateEat": true,
       "snack": true,
-      "walk": true
+      "walk": true,
+      "weigh": true
     }
   },
   "weights": {
