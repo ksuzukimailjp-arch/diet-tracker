@@ -42,6 +42,9 @@
       "snack": true,
       "walk": true,
       "weigh": true
+    },
+    "2026-05-05": {
+      "breakfast": true
     }
   },
   "weights": {
