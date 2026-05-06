@@ -47,7 +47,8 @@
       "breakfast": true
     },
     "2026-05-06": {
-      "breakfast": true
+      "breakfast": true,
+      "vegFirst": true
     }
   },
   "weights": {
