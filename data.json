@@ -56,7 +56,8 @@
       "breakfast": true,
       "noLateEat": true,
       "snack": true,
-      "water": true
+      "water": true,
+      "exercise": true
     }
   },
   "weights": {
