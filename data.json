@@ -53,7 +53,8 @@
       "weigh": true
     },
     "2026-05-07": {
-      "breakfast": true
+      "breakfast": true,
+      "noLateEat": true
     }
   },
   "weights": {
