@@ -54,7 +54,8 @@
     },
     "2026-05-07": {
       "breakfast": true,
-      "noLateEat": true
+      "noLateEat": true,
+      "snack": true
     }
   },
   "weights": {
