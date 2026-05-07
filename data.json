@@ -51,6 +51,9 @@
       "vegFirst": true,
       "noLateEat": true,
       "weigh": true
+    },
+    "2026-05-07": {
+      "breakfast": true
     }
   },
   "weights": {
